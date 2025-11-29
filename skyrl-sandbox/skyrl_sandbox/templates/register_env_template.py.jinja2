@@ -1,0 +1,34 @@
+"""Register entrypoint for the {{ spec.env_name }} environment."""
+
+import ray
+import hydra
+from omegaconf import DictConfig
+
+from skyrl_gym.envs import register
+from skyrl_train.entrypoints.main_base import BasePPOExp, config_dir, validate_cfg
+from skyrl_train.utils import initialize_ray
+
+
+@ray.remote(num_cpus=1)
+def skyrl_entrypoint(cfg: DictConfig):
+    """Entry point that registers the generated environment and starts training."""
+    register(
+        id="{{ spec.env_name }}",
+        entry_point="runs.{{ spec.env_name }}.env:{{ spec.env_name.capitalize() }}Env",
+    )
+
+    exp = BasePPOExp(cfg)
+    exp.run()
+
+
+@hydra.main(config_path=config_dir, config_name="ppo_base_config", version_base=None)
+def main(cfg: DictConfig) -> None:
+    """Hydra main that initializes Ray and launches the remote entrypoint."""
+    validate_cfg(cfg)
+    initialize_ray(cfg)
+    ray.get(skyrl_entrypoint.remote(cfg))
+
+
+if __name__ == "__main__":
+    main()
+

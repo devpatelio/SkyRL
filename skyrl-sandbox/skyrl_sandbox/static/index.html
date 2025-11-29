@@ -1,858 +1,1058 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkyRL Sandbox - Environment Builder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        
-        [x-cloak] {
-            display: none !important;
-        }
-        
-        body {
-            background: #000000;
-            color: #ffffff;
-            min-height: 100vh;
-        }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #111827;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 5px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563;
-        }
-        
-        /* Input fields */
-        .input-field {
-            width: 100%;
-            padding: 0.625rem 1rem;
-            background-color: #1f2937;
-            border: 1px solid #4b5563;
-            border-radius: 0.5rem;
-            color: #ffffff;
-            transition: all 0.2s;
-        }
-        
-        .input-field:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-        
-        .input-field::placeholder {
-            color: #9ca3af;
-        }
-        
-        /* Select fields */
-        .select-field {
-            width: 100%;
-            padding: 0.625rem 1rem;
-            background-color: #1f2937;
-            border: 1px solid #4b5563;
-            border-radius: 0.5rem;
-            color: #ffffff;
-            transition: all 0.2s;
-        }
-        
-        .select-field:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-        
-        .select-field option {
-            background-color: #1f2937;
-            color: #ffffff;
-        }
-        
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-            font-size: 0.875rem;
-        }
-        
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-        
-        .btn:disabled:hover {
-            transform: none !important;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-        }
-        
-        .btn-primary {
-            background-color: #2563eb;
-            color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            background-color: #1d4ed8;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-primary:focus {
-            outline: none;
-            ring: 2px;
-            ring-offset: 2px;
-            ring-color: #3b82f6;
-            ring-offset-color: #000000;
-        }
-        
-        .btn-success {
-            background-color: #16a34a;
-            color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-success:hover:not(:disabled) {
-            background-color: #15803d;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-success:focus {
-            outline: none;
-            ring: 2px;
-            ring-offset: 2px;
-            ring-color: #22c55e;
-            ring-offset-color: #000000;
-        }
-        
-        /* Cards */
-        .card {
-            background-color: #111827;
-            border-radius: 0.75rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            border: 1px solid #1f2937;
-        }
-        
-        /* Section headers */
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #1f2937;
-        }
-        
-        .section-number {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 0.5rem;
-            background-color: #1e3a8a;
-            color: #93c5fd;
-            font-weight: 700;
-            font-size: 0.875rem;
-        }
-        
-        /* Form groups */
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #d1d5db;
-        }
-        
-        .helper-text {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-top: 0.25rem;
-        }
-        
-        /* Toggle group */
-        .toggle-group {
-            display: inline-flex;
-            border-radius: 0.5rem;
-            background-color: #1f2937;
-            padding: 0.25rem;
-        }
-        
-        .toggle-btn {
-            padding: 0.5rem 1.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            border-radius: 0.375rem;
-            transition: all 0.2s;
-            border: none;
-            background: transparent;
-            color: #9ca3af;
-            cursor: pointer;
-        }
-        
-        .toggle-btn.active {
-            background-color: #111827;
-            color: #93c5fd;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-        
-        .toggle-btn:not(.active):hover {
-            color: #e5e7eb;
-        }
-        
-        /* Result cards */
-        .result-card {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            border: 2px solid;
-        }
-        
-        .result-card.success {
-            background-color: #064e3b;
-            border-color: #065f46;
-        }
-        
-        .result-card.error {
-            background-color: #7f1d1d;
-            border-color: #991b1b;
-        }
-        
-        .result-card.info {
-            background-color: #1e3a8a;
-            border-color: #1e40af;
-        }
-        
-        /* Spec items */
-        .spec-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem;
-            background-color: #1f2937;
-            border-radius: 0.5rem;
-            border: 1px solid #374151;
-            transition: all 0.2s;
-        }
-        
-        .spec-item:hover {
-            border-color: #3b82f6;
-            background-color: #374151;
-        }
-        
-        .icon-btn {
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: color 0.15s;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-        }
-        
-        .icon-btn:hover {
-            background-color: #111827;
-        }
-        
-        /* Header */
-        .header-gradient {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Checkbox */
-        input[type="checkbox"] {
-            width: 1rem;
-            height: 1rem;
-            border: 1px solid #4b5563;
-            border-radius: 0.25rem;
-            background-color: #1f2937;
-            cursor: pointer;
-        }
-        
-        input[type="checkbox"]:checked {
-            background-color: #2563eb;
-            border-color: #2563eb;
-        }
-        
-        input[type="checkbox"]:focus {
-            outline: none;
-            ring: 2px;
-            ring-color: #3b82f6;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyRL Sandbox</title>
+  <link rel="stylesheet" href="https://unpkg.com/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/@tabler/core@1.0.0-beta20/dist/css/tabler-vendors.min.css">
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .code-input { font-family: var(--tblr-font-monospace); }
+    .log-viewer { max-height: 320px; overflow-y: auto; font-family: var(--tblr-font-monospace); background: #0f172a; color: #e2e8f0; }
+    .nav-tabs .nav-link { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+  </style>
 </head>
-<body x-data="envBuilder()">
-    <!-- Header -->
-    <header class="header-gradient text-white shadow-2xl">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-bold tracking-tight">SkyRL Sandbox</h1>
-                    <p class="text-gray-400 mt-2 text-lg">Build custom reinforcement learning environments with ease</p>
-                </div>
-                <div class="hidden md:flex items-center gap-6 text-sm">
-                    <div class="text-right">
-                        <div class="text-gray-500 text-xs uppercase tracking-wide">Environment Builder</div>
-                        <div class="text-white font-semibold mt-0.5">Version 0.1.0</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<body class="theme-light" x-data="sandboxApp()" x-init="init()">
+  <div class="page">
+    <header class="navbar navbar-expand-md navbar-light bg-white sticky-top">
+      <div class="container-xl">
+        <a href="#" class="navbar-brand">
+          <span class="navbar-brand-text fw-bold">SkyRL Sandbox</span>
+          <span class="badge bg-lime ms-2">beta</span>
+        </a>
+      </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            
-            <!-- Left Panel - Configuration -->
-            <div class="lg:col-span-2 space-y-8">
-                
-                <!-- Basic Configuration -->
-                <section class="card">
-                    <div class="p-6 section-header">
-                        <span class="section-number">1</span>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Basic Configuration</h2>
-                            <p class="text-sm text-gray-400 mt-0.5">Define the core properties of your environment</p>
-                        </div>
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+          <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+              <a href="#" class="nav-link" :class="{active: activeTab === 'env'}" @click.prevent="setTab('env')">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <i class="ti ti-settings"></i>
+                </span>
+                <span class="nav-link-title">Environments</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link" :class="{active: activeTab === 'dataset'}" @click.prevent="setTab('dataset')">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <i class="ti ti-database"></i>
+                </span>
+                <span class="nav-link-title">Datasets</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#" class="nav-link" :class="{active: activeTab === 'training'}" @click.prevent="setTab('training')">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <i class="ti ti-rocket"></i>
+                </span>
+                <span class="nav-link-title">Training</span>
+              </a>
+            </li>
+          </ul>
+
+          <!-- Environment Tab -->
+          <div x-show="activeTab === 'env'" x-cloak>
+            <div class="row row-cards">
+              <div class="col-lg-8">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Basic configuration</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Environment name</label>
+                        <input type="text" class="form-control" placeholder="multiply"
+                               x-model="spec.env_name">
+                        <small class="form-hint">Lowercase letters, numbers, underscores</small>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Environment type</label>
+                        <select class="form-select" x-model="spec.env_type">
+                          <option value="single_turn">Single turn</option>
+                          <option value="multi_turn">Multi turn</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4" x-show="spec.env_type === 'multi_turn'">
+                        <label class="form-label">Max turns</label>
+                        <input type="number" min="1" max="20" class="form-control" x-model.number="spec.max_turns">
+                      </div>
+                      <div class="col-md-8">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2"
+                                  placeholder="What problem does this environment solve?"
+                                  x-model="spec.description"></textarea>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">Done condition</label>
+                        <select class="form-select" x-model="spec.done_condition">
+                          <option value="always_single_step">Always end after one step</option>
+                          <option value="max_turns_only">Only max turns</option>
+                          <option value="correct_or_max_turns">Correct or max turns</option>
+                        </select>
+                      </div>
                     </div>
-                    <div class="p-6 space-y-5">
-                        <div class="form-group">
-                            <label class="label">Environment Name</label>
-                            <input 
-                                type="text" 
-                                x-model="spec.env_name" 
-                                placeholder="multiply" 
-                                class="input-field"
-                            />
-                            <p class="helper-text">Use lowercase letters, numbers, and underscores only</p>
-                        </div>
+                  </div>
+                </div>
 
-                        <div class="form-group">
-                            <label class="label">Environment Type</label>
-                            <div class="toggle-group">
-                                <button 
-                                    @click="spec.env_type = 'single_turn'" 
-                                    :class="{'active': spec.env_type === 'single_turn'}"
-                                    class="toggle-btn"
-                                >
-                                    Single Turn
-                                </button>
-                                <button 
-                                    @click="spec.env_type = 'multi_turn'" 
-                                    :class="{'active': spec.env_type === 'multi_turn'}"
-                                    class="toggle-btn"
-                                >
-                                    Multi Turn
-                                </button>
-                            </div>
-                        </div>
-
-                        <div x-show="spec.env_type === 'multi_turn'" x-cloak class="form-group">
-                            <label class="label">Maximum Turns</label>
-                            <input 
-                                type="number" 
-                                x-model.number="spec.max_turns" 
-                                min="1" 
-                                max="20" 
-                                class="input-field"
-                                style="width: 8rem;"
-                            />
-                            <p class="helper-text">Maximum number of interactions before episode ends</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="label">Description <span class="text-gray-500 font-normal">(optional)</span></label>
-                            <textarea 
-                                x-model="spec.description" 
-                                rows="3" 
-                                placeholder="Describe what this environment does and its purpose"
-                                class="input-field resize-none"
-                            ></textarea>
-                        </div>
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Answer parsing</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Method</label>
+                        <select class="form-select" x-model="spec.parsing.method">
+                          <option value="regex">Regex capture</option>
+                          <option value="json_path">JSON path</option>
+                        </select>
+                      </div>
+                      <div class="col-md-8" x-show="spec.parsing.method === 'regex'">
+                        <label class="form-label">Regex pattern</label>
+                        <input type="text" class="form-control code-input"
+                               placeholder="\\boxed{([^}]+)}"
+                               x-model="spec.parsing.pattern">
+                      </div>
+                      <div class="col-md-8" x-show="spec.parsing.method === 'json_path'">
+                        <label class="form-label">JSONPath</label>
+                        <input type="text" class="form-control code-input"
+                               placeholder="$.answer"
+                               x-model="spec.parsing.json_path">
+                      </div>
                     </div>
-                </section>
+                  </div>
+                </div>
 
-                <!-- Parsing Logic -->
-                <section class="card">
-                    <div class="p-6 section-header">
-                        <span class="section-number">2</span>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Answer Parsing</h2>
-                            <p class="text-sm text-gray-400 mt-0.5">Extract the model's answer from its output</p>
-                        </div>
+                <div class="card mb-4">
+                  <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                      <h3 class="card-title mb-0">Reward authoring</h3>
+                      <small class="text-muted">Source → Scheme</small>
                     </div>
-                    <div class="p-6 space-y-5">
-                        <div class="form-group">
-                            <label class="label">Parsing Method</label>
-                            <select x-model="spec.parsing.method" class="select-field">
-                                <option value="regex">Regular Expression</option>
-                                <option value="json_path">JSON Path</option>
-                            </select>
-                        </div>
-
-                        <div x-show="spec.parsing.method === 'regex'" x-cloak class="form-group">
-                            <label class="label">Regular Expression Pattern</label>
-                            <input 
-                                type="text" 
-                                x-model="spec.parsing.pattern" 
-                                placeholder="\boxed\{([^}]+)\}"
-                                class="input-field font-mono text-sm"
-                            />
-                            <p class="helper-text">Use a capturing group to extract the answer</p>
-                        </div>
-
-                        <div x-show="spec.parsing.method === 'json_path'" x-cloak class="form-group">
-                            <label class="label">JSON Path Expression</label>
-                            <input 
-                                type="text" 
-                                x-model="spec.parsing.json_path" 
-                                placeholder="$.answer"
-                                class="input-field font-mono text-sm"
-                            />
-                            <p class="helper-text">JSONPath to navigate and extract the answer field</p>
-                        </div>
+                    <span class="badge bg-blue">creation</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label">Creation method</label>
+                      <div class="btn-list flex-wrap">
+                        <button class="btn" :class="{'btn-primary': spec.reward.creation.method === 'parsed_answer_rule'}"
+                                @click="spec.reward.creation.method = 'parsed_answer_rule'">Parsed answer rules</button>
+                        <button class="btn" :class="{'btn-primary': spec.reward.creation.method === 'json_path_rule'}"
+                                @click="spec.reward.creation.method = 'json_path_rule'">JSON signal</button>
+                        <button class="btn" :class="{'btn-primary': spec.reward.creation.method === 'llm_verifier'}"
+                                @click="spec.reward.creation.method = 'llm_verifier'">LLM verifier</button>
+                      </div>
                     </div>
-                </section>
 
-                <!-- Reward Configuration -->
-                <section class="card">
-                    <div class="p-6 section-header">
-                        <span class="section-number">3</span>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Reward Configuration</h2>
-                            <p class="text-sm text-gray-400 mt-0.5">Define how to score the model's responses</p>
-                        </div>
+                    <div x-show="spec.reward.creation.method === 'parsed_answer_rule'" class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Rule type</label>
+                        <select class="form-select" x-model="spec.reward.creation.rule_type">
+                          <option value="exact_match">Exact match</option>
+                          <option value="regex_match">Regex match</option>
+                          <option value="numeric_tolerance">Numeric tolerance</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4" x-show="spec.reward.creation.rule_type === 'numeric_tolerance'">
+                        <label class="form-label">Tolerance</label>
+                        <input type="number" step="0.001" class="form-control"
+                               x-model.number="spec.reward.creation.numeric_tolerance">
+                      </div>
+                      <div class="col-md-4" x-show="spec.reward.creation.rule_type === 'regex_match'">
+                        <label class="form-label">Custom regex (optional)</label>
+                        <input type="text" class="form-control code-input"
+                               placeholder="^answer$"
+                               x-model="spec.reward.creation.regex_pattern">
+                      </div>
                     </div>
-                    <div class="p-6 space-y-5">
-                        <div class="form-group">
-                            <label class="label">Reward Method</label>
-                            <select x-model="spec.reward.method" class="select-field">
-                                <option value="exact_match">Exact String Match</option>
-                                <option value="regex_match">Regular Expression Match</option>
-                                <option value="numeric_tolerance">Numeric Tolerance</option>
-                            </select>
-                        </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group">
-                                <label class="label">Correct Reward</label>
-                                <input 
-                                    type="number" 
-                                    step="0.1" 
-                                    x-model.number="spec.reward.correct_reward" 
-                                    class="input-field"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label class="label">Incorrect Reward</label>
-                                <input 
-                                    type="number" 
-                                    step="0.1" 
-                                    x-model.number="spec.reward.incorrect_reward" 
-                                    class="input-field"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    x-model="usePartialReward"
-                                />
-                                <span class="text-sm font-medium text-gray-300">Enable partial reward for correct format</span>
-                            </label>
-                            <input 
-                                x-show="usePartialReward" 
-                                x-cloak 
-                                type="number" 
-                                step="0.1" 
-                                x-model.number="spec.reward.partial_reward" 
-                                placeholder="0.5"
-                                class="input-field mt-2"
-                            />
-                        </div>
-
-                        <div x-show="spec.reward.method === 'numeric_tolerance'" x-cloak class="form-group">
-                            <label class="label">Numeric Tolerance</label>
-                            <input 
-                                type="number" 
-                                step="0.001" 
-                                x-model.number="spec.reward.tolerance" 
-                                placeholder="0.01"
-                                class="input-field"
-                            />
-                            <p class="helper-text">Acceptable difference between answer and ground truth</p>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="label">Episode Termination</label>
-                            <select x-model="spec.done_condition" class="select-field">
-                                <option value="always_single_step">End after one step</option>
-                                <option value="max_turns_only">End at maximum turns</option>
-                                <option value="correct_or_max_turns">End when correct or at max turns</option>
-                            </select>
-                        </div>
+                    <div x-show="spec.reward.creation.method === 'json_path_rule'" class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">JSONPath</label>
+                        <input type="text" class="form-control code-input"
+                               placeholder="$.score"
+                               x-model="spec.reward.creation.json_path">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Success values (comma separated)</label>
+                        <input type="text" class="form-control"
+                               placeholder="correct,pass,true"
+                               x-model="spec.reward.creation.json_success_values_text">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Threshold (optional)</label>
+                        <input type="number" step="0.01" class="form-control"
+                               placeholder="0.8"
+                               x-model.number="spec.reward.creation.json_threshold">
+                      </div>
                     </div>
-                </section>
 
-                <!-- Feedback Messages -->
-                <section class="card" x-show="spec.env_type === 'multi_turn'" x-cloak>
-                    <div class="p-6 section-header">
-                        <span class="section-number">4</span>
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Feedback Messages</h2>
-                            <p class="text-sm text-gray-400 mt-0.5">Customize feedback for multi-turn interactions</p>
-                        </div>
+                    <div x-show="spec.reward.creation.method === 'llm_verifier'" class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Provider</label>
+                        <select class="form-select" x-model="spec.reward.creation.llm.provider">
+                          <option value="mock">Mock (heuristic)</option>
+                          <option value="openai">OpenAI-compatible</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Model</label>
+                        <input type="text" class="form-control" placeholder="gpt-4o-mini"
+                               x-model="spec.reward.creation.llm.model">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Success threshold</label>
+                        <input type="number" step="0.05" class="form-control"
+                               x-model.number="spec.reward.creation.llm.success_threshold">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">Prompt template</label>
+                        <textarea rows="3" class="form-control code-input"
+                                  x-model="spec.reward.creation.llm.prompt_template"></textarea>
+                        <small class="form-hint">Use {model_output} and {ground_truth} placeholders.</small>
+                      </div>
                     </div>
-                    <div class="p-6 space-y-5">
-                        <div class="form-group">
-                            <label class="label">Incorrect Answer Feedback</label>
-                            <textarea 
-                                x-model="spec.feedback.on_incorrect" 
-                                rows="2"
-                                class="input-field resize-none"
-                            ></textarea>
-                            <p class="helper-text">Use {answer} to reference the parsed answer</p>
-                        </div>
 
-                        <div class="form-group">
-                            <label class="label">Format Error Feedback</label>
-                            <textarea 
-                                x-model="spec.feedback.on_format_error" 
-                                rows="2"
-                                class="input-field resize-none"
-                            ></textarea>
-                        </div>
+                    <hr>
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Reward scheme</label>
+                        <select class="form-select" x-model="spec.reward.scheme.scheme">
+                          <option value="binary">Binary</option>
+                          <option value="partial">Partial credit</option>
+                          <option value="dense">Dense (use raw score)</option>
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Correct reward</label>
+                        <input type="number" step="0.1" class="form-control"
+                               x-model.number="spec.reward.scheme.correct_reward">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Incorrect reward</label>
+                        <input type="number" step="0.1" class="form-control"
+                               x-model.number="spec.reward.scheme.incorrect_reward">
+                      </div>
+                      <div class="col-md-4" x-show="spec.reward.scheme.scheme !== 'binary'">
+                        <label class="form-label">Partial reward</label>
+                        <input type="number" step="0.1" class="form-control"
+                               x-model.number="spec.reward.scheme.partial_reward">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Format error penalty</label>
+                        <input type="number" step="0.1" class="form-control"
+                               x-model.number="spec.reward.scheme.format_error_reward">
+                      </div>
                     </div>
-                </section>
+                  </div>
+                </div>
+
+                <div class="card" x-show="spec.env_type === 'multi_turn'">
+                  <div class="card-header">
+                    <h3 class="card-title">Feedback messages</h3>
+                  </div>
+                  <div class="card-body row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Incorrect feedback</label>
+                      <textarea rows="3" class="form-control"
+                                x-model="spec.feedback.on_incorrect"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Format feedback</label>
+                      <textarea rows="3" class="form-control"
+                                x-model="spec.feedback.on_format_error"></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Preview reward logic</h3>
+                  </div>
+                  <div class="card-body">
+                    <label class="form-label">Model output</label>
+                    <textarea rows="3" class="form-control code-input mb-3"
+                              x-model="preview.model_output"></textarea>
+                    <label class="form-label">Ground truth</label>
+                    <input type="text" class="form-control mb-3"
+                           x-model="preview.ground_truth">
+                    <label class="form-label">Current turn</label>
+                    <input type="number" min="1" class="form-control mb-3"
+                           x-model.number="preview.current_turn">
+                    <button class="btn btn-primary w-100 mb-2" @click="runPreview()" :disabled="!spec.env_name">
+                      Run preview
+                    </button>
+                    <div class="alert alert-danger" x-show="preview.error" x-text="preview.error"></div>
+                    <div class="card bg-light" x-show="preview.result">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                          <span class="text-muted">Parsed</span>
+                          <code x-text="preview.result.parsed_answer || 'null'"></code>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <span class="text-muted">Reward</span>
+                          <span class="fw-bold" x-text="preview.result.reward"></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <span class="text-muted">Done</span>
+                          <span x-text="preview.result.done ? 'Yes' : 'No'"></span>
+                        </div>
+                        <div class="mt-2" x-show="preview.result.feedback">
+                          <small class="text-muted">Feedback</small>
+                          <div class="alert alert-info mt-1" x-text="preview.result.feedback"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Actions</h3>
+                  </div>
+                  <div class="card-body">
+                    <button class="btn btn-success w-100 mb-2" @click="saveSpec()" :disabled="!spec.env_name">
+                      Save environment
+                    </button>
+                    <button class="btn btn-outline-primary w-100" @click="exportEnv()" :disabled="!spec.env_name">
+                      Export code
+                    </button>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between">
+                    <h3 class="card-title mb-0">Saved environments</h3>
+                    <button class="btn btn-sm btn-link" @click="loadSpecs()">Refresh</button>
+                  </div>
+                  <div class="list-group list-group-flush">
+                    <div class="list-group-item" x-show="savedSpecs.length === 0">
+                      <div class="text-muted text-center">No specs yet</div>
+                    </div>
+                    <template x-for="name in savedSpecs" :key="name">
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-monospace" x-text="name"></span>
+                        <div class="btn-list">
+                          <button class="btn btn-sm btn-link" @click="loadSpec(name)">Load</button>
+                          <button class="btn btn-sm btn-link text-danger" @click="deleteSpec(name)">Delete</button>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Right Panel - Testing & Export -->
-            <div class="space-y-8 lg:sticky lg:top-8">
-                
-                <!-- Test Preview -->
-                <section class="card">
-                    <div class="p-6 border-b border-gray-800">
-                        <h2 class="text-lg font-bold text-white">Test Configuration</h2>
-                        <p class="text-sm text-gray-400 mt-1">Validate your logic with sample data</p>
+          <!-- Dataset Tab -->
+          <div x-show="activeTab === 'dataset'" x-cloak>
+            <div class="row row-cards">
+              <div class="col-lg-8">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Dataset metadata</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Dataset name</label>
+                        <input type="text" class="form-control" x-model="dataset.spec.dataset_name">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-control" x-model="dataset.spec.description">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Default data source</label>
+                        <input type="text" class="form-control" x-model="dataset.spec.defaults.data_source">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Default env class</label>
+                        <input type="text" class="form-control" x-model="dataset.spec.defaults.env_class">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Reward method</label>
+                        <select class="form-select" x-model="dataset.spec.defaults.reward_spec.method">
+                          <option value="rule">Rule based</option>
+                          <option value="reward_model">Reward model</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6" x-show="dataset.spec.defaults.reward_spec.method === 'rule'">
+                        <label class="form-label">Default ground truth</label>
+                        <input type="text" class="form-control" x-model="dataset.spec.defaults.reward_spec.ground_truth">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Default extra info (JSON)</label>
+                        <textarea rows="2" class="form-control code-input"
+                                  x-model="dataset.defaultsExtraInfoText"></textarea>
+                      </div>
                     </div>
-                    <div class="p-6 space-y-4">
-                        <div class="form-group">
-                            <label class="label">Model Output</label>
-                            <textarea 
-                                x-model="preview.model_output" 
-                                rows="3"
-                                placeholder="Paste sample model output here"
-                                class="input-field resize-none font-mono text-sm"
-                            ></textarea>
-                        </div>
+                  </div>
+                </div>
 
-                        <div class="form-group">
-                            <label class="label">Ground Truth</label>
-                            <input 
-                                type="text" 
-                                x-model="preview.ground_truth" 
-                                placeholder="Expected correct answer"
-                                class="input-field"
-                            />
-                        </div>
-
-                        <div x-show="spec.env_type === 'multi_turn'" x-cloak class="form-group">
-                            <label class="label">Current Turn</label>
-                            <input 
-                                type="number" 
-                                x-model.number="preview.current_turn" 
-                                min="1" 
-                                :max="spec.max_turns"
-                                class="input-field"
-                            />
-                        </div>
-
-                        <button 
-                            @click="runPreview()" 
-                            class="btn btn-primary"
-                            :disabled="!spec.env_name"
-                        >
-                            Run Test
-                        </button>
-
-                        <!-- Results -->
-                        <div x-show="preview.result" x-cloak class="result-card info">
-                            <h3 class="font-bold text-blue-300 mb-3 text-sm uppercase tracking-wide">Test Results</h3>
-                            <div class="space-y-2.5 text-sm">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-300">Parsed Answer</span>
-                                    <code class="bg-gray-900 px-3 py-1 rounded border border-blue-700 text-white font-mono text-xs" x-text="preview.result.parsed_answer || 'null'"></code>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-300">Correctness</span>
-                                    <span 
-                                        :class="preview.result.is_correct ? 'text-green-400 font-bold' : 'text-red-400 font-bold'" 
-                                        x-text="preview.result.is_correct ? 'Correct' : 'Incorrect'"
-                                    ></span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-300">Reward</span>
-                                    <span class="font-mono font-bold text-white" x-text="preview.result.reward"></span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-300">Episode Done</span>
-                                    <span class="text-white font-medium" x-text="preview.result.done ? 'Yes' : 'No'"></span>
-                                </div>
-                                <div x-show="preview.result.feedback" x-cloak class="pt-2 border-t border-blue-700">
-                                    <span class="font-semibold text-gray-300 block mb-1">Feedback</span>
-                                    <p class="text-gray-200 bg-gray-900 p-2 rounded border border-blue-700 italic text-sm" x-text="preview.result.feedback"></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div x-show="preview.error" x-cloak class="result-card error">
-                            <p class="text-red-300 font-semibold text-sm" x-text="preview.error"></p>
-                        </div>
+                <div class="card mb-4">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Entries</h3>
+                    <div class="btn-list">
+                      <select class="form-select" style="width:auto" x-model="dataset.selectedSplit">
+                        <template x-for="split in dataset.spec.splits" :key="split.name">
+                          <option :value="split.name" x-text="split.name"></option>
+                        </template>
+                      </select>
+                      <button class="btn btn-outline-primary" @click="addDatasetEntry()">Add entry</button>
                     </div>
-                </section>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-vcenter">
+                      <thead>
+                        <tr>
+                          <th class="text-center" style="width: 5%;">#</th>
+                          <th style="width: 45%;">User prompt</th>
+                          <th style="width: 35%;">Ground truth</th>
+                          <th class="text-center" style="width: 15%;">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr x-show="activeDatasetEntries().length === 0">
+                          <td colspan="4" class="text-muted text-center">No entries yet.</td>
+                        </tr>
+                        <template x-for="(entry, idx) in activeDatasetEntries()" :key="idx">
+                          <tr>
+                            <td class="text-muted text-center align-middle" x-text="idx + 1"></td>
+                            <td class="align-middle">
+                              <textarea rows="2" class="form-control"
+                                        x-model="entry.prompt[entry.prompt.length - 1].content"></textarea>
+                              <small class="text-muted">System prompt stored above user message.</small>
+                            </td>
+                            <td class="align-middle">
+                              <input type="text" class="form-control"
+                                     x-model="entry.reward_spec.ground_truth">
+                            </td>
+                            <td class="text-center align-middle">
+                              <button class="btn btn-sm btn-link text-danger" @click="removeDatasetEntry(idx)">Remove</button>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
 
-                <!-- Actions -->
-                <section class="card">
-                    <div class="p-6 space-y-3">
-                        <button 
-                            @click="saveSpec()" 
-                            class="btn btn-success"
-                            :disabled="!spec.env_name"
-                        >
-                            Save Specification
-                        </button>
-                        
-                        <button 
-                            @click="exportEnv()" 
-                            class="btn btn-primary"
-                            :disabled="!spec.env_name"
-                        >
-                            Export Environment Code
-                        </button>
+              <div class="col-lg-4">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Dataset actions</h3>
+                  </div>
+                  <div class="card-body">
+                    <button class="btn btn-success w-100 mb-2" @click="saveDataset()">Save dataset</button>
+                    <button class="btn btn-outline-primary w-100 mb-2" @click="exportDataset('json')">Export JSON</button>
+                    <button class="btn btn-outline-primary w-100" @click="exportDataset('parquet')">Export Parquet</button>
+                    <div class="alert alert-info mt-3" x-show="dataset.message" x-text="dataset.message"></div>
+                    <div class="alert alert-danger mt-3" x-show="dataset.error" x-text="dataset.error"></div>
+                  </div>
+                </div>
 
-                        <div x-show="export.success" x-cloak class="result-card success">
-                            <p class="text-green-300 font-bold text-sm mb-1">Export Successful</p>
-                            <p class="text-green-200 text-sm" x-text="export.message"></p>
-                        </div>
-
-                        <div x-show="export.error" x-cloak class="result-card error">
-                            <p class="text-red-300 font-semibold text-sm" x-text="export.error"></p>
-                        </div>
+                <div class="card mb-4">
+                  <div class="card-header d-flex justify-content-between">
+                    <h3 class="card-title mb-0">Saved datasets</h3>
+                    <button class="btn btn-sm btn-link" @click="loadDatasets()">Refresh</button>
+                  </div>
+                  <div class="list-group list-group-flush">
+                    <div class="list-group-item" x-show="dataset.saved.length === 0">
+                      <div class="text-muted text-center">No datasets yet</div>
                     </div>
-                </section>
+                    <template x-for="name in dataset.saved" :key="name">
+                      <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-monospace" x-text="name"></span>
+                        <div class="btn-list">
+                          <button class="btn btn-sm btn-link" @click="loadDataset(name)">Load</button>
+                          <button class="btn btn-sm btn-link text-danger" @click="deleteDataset(name)">Delete</button>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
 
-                <!-- Saved Environments -->
-                <section class="card">
-                    <div class="p-6 border-b border-gray-800">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-bold text-white">Saved Environments</h2>
-                            <button 
-                                @click="loadSpecs()" 
-                                class="text-blue-500 hover:text-blue-400 text-sm font-semibold transition-colors duration-150"
-                            >
-                                Refresh
-                            </button>
-                        </div>
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">Exported artifacts</h3>
+                  </div>
+                  <div class="list-group list-group-flush">
+                    <div class="list-group-item" x-show="datasetExports.length === 0">
+                      <span class="text-muted text-center d-block">Export a dataset to view files.</span>
                     </div>
-                    <div class="p-6">
-                        <div x-show="savedSpecs.length === 0" class="text-center py-8 text-gray-500">
-                            <p class="text-sm">No saved environments</p>
-                        </div>
-
-                        <div x-show="savedSpecs.length > 0" class="space-y-2">
-                            <template x-for="name in savedSpecs" :key="name">
-                                <div class="spec-item">
-                                    <span class="font-mono text-sm font-semibold text-white" x-text="name"></span>
-                                    <div class="flex items-center gap-4">
-                                        <button 
-                                            @click="loadSpec(name)" 
-                                            class="icon-btn text-blue-500 hover:text-blue-400"
-                                        >
-                                            Load
-                                        </button>
-                                        <button 
-                                            @click="deleteSpec(name)" 
-                                            class="icon-btn text-red-500 hover:text-red-400"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </section>
+                    <template x-for="exp in datasetExports" :key="exp.dataset">
+                      <div class="list-group-item">
+                        <div class="fw-bold" x-text="exp.dataset"></div>
+                        <ul class="list-unstyled small mb-0">
+                          <template x-for="file in exp.files" :key="file.path">
+                            <li>
+                              <span class="text-muted" x-text="file.split + ' (' + file.format + ')'"></span>
+                              <code class="d-block text-truncate" x-text="file.path"></code>
+                              <a href="#" @click.prevent="applyExportToTraining(file)" class="small">use in training</a>
+                            </li>
+                          </template>
+                        </ul>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Training Tab -->
+          <div x-show="activeTab === 'training'" x-cloak>
+            <div class="row row-cards">
+              <div class="col-lg-6">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Kick off a training run</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label">Environment class</label>
+                      <select class="form-select" x-model="training.form.env_name">
+                        <option value="" disabled>Select environment</option>
+                        <template x-for="name in savedSpecs" :key="name">
+                          <option :value="name" x-text="name"></option>
+                        </template>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Run name</label>
+                      <input type="text" class="form-control" x-model="training.form.run_name">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Train dataset paths (one per line)</label>
+                      <textarea rows="2" class="form-control code-input"
+                                x-model="training.form.train_data_text"></textarea>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Validation dataset paths</label>
+                      <textarea rows="2" class="form-control code-input"
+                                x-model="training.form.val_data_text"></textarea>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Hydra overrides (one per line)</label>
+                      <textarea rows="2" class="form-control code-input"
+                                placeholder="trainer.run_name=my_run"
+                                x-model="training.form.hydra_overrides_text"></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100" @click="startTraining()">Launch training</button>
+                    <div class="alert alert-danger mt-3" x-show="training.error" x-text="training.error"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-6">
+                <div class="card mb-4">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Runs</h3>
+                    <button class="btn btn-sm btn-link" @click="fetchTrainingRuns()">Refresh</button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-vcenter">
+                      <thead>
+                        <tr>
+                          <th style="width: 35%;">Run</th>
+                          <th class="text-center" style="width: 20%;">Status</th>
+                          <th style="width: 25%;">Env</th>
+                          <th class="text-center" style="width: 20%;">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr x-show="training.runs.length === 0">
+                          <td colspan="4" class="text-muted text-center">No runs yet.</td>
+                        </tr>
+                        <template x-for="run in training.runs" :key="run.id">
+                          <tr>
+                            <td class="align-middle">
+                              <div class="fw-bold" x-text="run.run_name"></div>
+                              <div class="text-muted small" x-text="run.id"></div>
+                            </td>
+                            <td class="text-center align-middle">
+                              <span class="badge"
+                                    :class="{'bg-success': run.status === 'success', 'bg-danger': run.status === 'error', 'bg-warning': run.status === 'running'}"
+                                    x-text="run.status"></span>
+                            </td>
+                            <td class="align-middle" x-text="run.env_name"></td>
+                            <td class="text-center align-middle">
+                              <button class="btn btn-sm btn-link" @click="tailLogs(run)">Logs</button>
+                              <button class="btn btn-sm btn-link text-danger" @click="stopTraining(run)" x-show="run.status === 'running'">Stop</button>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="card" x-show="training.logs.lines.length">
+                  <div class="card-header d-flex justify-content-between">
+                    <h3 class="card-title">Logs: <span x-text="training.logs.run_id"></span></h3>
+                    <button class="btn btn-sm btn-link" @click="tailLogs(null)">Close</button>
+                  </div>
+                  <div class="log-viewer card-body">
+                    <pre class="mb-0"><template x-for="line in training.logs.lines"><span x-text="line"></span>
+</template></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-    </main>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        function envBuilder() {
-            return {
-                spec: {
-                    env_name: '',
-                    env_type: 'single_turn',
-                    max_turns: 3,
-                    description: '',
-                    parsing: {
-                        method: 'regex',
-                        pattern: '\\\\boxed\\{([^}]+)\\}',
-                        json_path: '$.answer'
-                    },
-                    reward: {
-                        method: 'exact_match',
-                        correct_reward: 1.0,
-                        incorrect_reward: 0.0,
-                        partial_reward: null,
-                        tolerance: 0.01
-                    },
-                    feedback: {
-                        on_incorrect: "Your answer '{answer}' is incorrect. Please try again.",
-                        on_format_error: "Please provide your answer in the correct format."
-                    },
-                    done_condition: 'always_single_step'
-                },
-                preview: { model_output: '', ground_truth: '', current_turn: 1, result: null, error: null },
-                export: { success: false, error: null, message: '', files: [] },
-                usePartialReward: false,
-                savedSpecs: [],
+  <script>
+    function sandboxApp() {
+      return {
+        activeTab: 'env',
+        spec: {},
+        preview: { model_output: '', ground_truth: '', current_turn: 1, result: null, error: null },
+        export: { success: false, error: null, message: '' },
+        savedSpecs: [],
+        dataset: {
+          spec: {},
+          saved: [],
+          selectedSplit: 'train',
+          message: '',
+          error: '',
+          defaultsExtraInfoText: '{}'
+        },
+        datasetExports: [],
+        training: {
+          form: { env_name: '', run_name: 'sandbox-run', train_data_text: '', val_data_text: '', hydra_overrides_text: '' },
+          runs: [],
+          logs: { run_id: null, lines: [] },
+          error: ''
+        },
 
-                async runPreview() {
-                    this.preview.result = null;
-                    this.preview.error = null;
-                    if (!this.validateSpec()) return;
-                    try {
-                        const response = await fetch('/api/preview', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                spec: this.spec,
-                                model_output: this.preview.model_output,
-                                ground_truth: this.preview.ground_truth,
-                                current_turn: this.preview.current_turn
-                            })
-                        });
-                        if (!response.ok) throw new Error((await response.json()).detail || 'Preview failed');
-                        this.preview.result = await response.json();
-                    } catch (e) { this.preview.error = e.message; }
+        init() {
+          this.resetSpec();
+          this.resetDatasetSpec();
+          this.loadSpecs();
+          this.loadDatasets();
+          this.loadDatasetExports();
+          this.fetchTrainingRuns();
+        },
+
+        setTab(tab) { this.activeTab = tab; },
+
+        resetSpec() {
+          this.spec = this.augmentSpec({
+            env_name: '',
+            env_type: 'single_turn',
+            max_turns: 3,
+            description: '',
+            parsing: { method: 'regex', pattern: '\\\\boxed\\{([^}]+)\\}', json_path: '$.answer' },
+            reward: {
+              creation: {
+                method: 'parsed_answer_rule',
+                rule_type: 'exact_match',
+                numeric_tolerance: 0.01,
+                regex_pattern: '',
+                json_path: '$.score',
+                json_success_values: [],
+                json_threshold: null,
+                llm: {
+                  provider: 'mock',
+                  model: 'gpt-4o-mini',
+                  prompt_template: "You are a strict automated judge for reinforcement learning rewards.\\nGiven the model response:\\n{model_output}\\nand the ground truth reference answer:\\n{ground_truth}\\nReturn a JSON object with keys `score` and `explanation`.",
+                  temperature: 0,
+                  max_output_tokens: 128,
+                  success_threshold: 0.5,
+                  response_format: 'score',
+                  success_keywords: ['yes', 'correct'],
+                  api_key_env: 'OPENAI_API_KEY',
+                  api_base: null
                 },
-                
-                async saveSpec() {
-                    if (!this.validateSpec()) return;
-                    try {
-                        const response = await fetch('/api/specs', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: this.getSpecPayload()
-                        });
-                        if (!response.ok) throw new Error((await response.json()).detail || 'Save failed');
-                        alert('Environment specification saved successfully');
-                        this.loadSpecs();
-                    } catch (e) { alert('Error: ' + e.message); }
-                },
-                
-                async exportEnv() {
-                    this.export.success = false;
-                    this.export.error = null;
-                    if (!this.validateSpec()) return;
-                    try {
-                        const response = await fetch('/api/export', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ spec: JSON.parse(this.getSpecPayload()) })
-                        });
-                        if (!response.ok) throw new Error((await response.json()).detail || 'Export failed');
-                        const result = await response.json();
-                        this.export.success = result.success;
-                        this.export.message = result.message;
-                        setTimeout(() => { this.export.success = false; }, 5000);
-                    } catch (e) { this.export.error = e.message; }
-                },
-                
-                async loadSpecs() {
-                    try {
-                        const response = await fetch('/api/specs');
-                        if (response.ok) this.savedSpecs = await response.json();
-                    } catch (e) { console.error('Error loading specs:', e); }
-                },
-                
-                async loadSpec(name) {
-                    try {
-                        const response = await fetch(`/api/specs/${name}`);
-                        if (response.ok) {
-                            this.spec = await response.json();
-                            this.usePartialReward = this.spec.reward.partial_reward !== null;
-                            alert(`Loaded: ${name}`);
-                        }
-                    } catch (e) { alert('Error: ' + e.message); }
-                },
-                
-                async deleteSpec(name) {
-                    if (!confirm(`Delete "${name}"?`)) return;
-                    try {
-                        const response = await fetch(`/api/specs/${name}`, { method: 'DELETE' });
-                        if (!response.ok) throw new Error((await response.json()).detail || 'Delete failed');
-                        alert(`Deleted: ${name}`);
-                        this.loadSpecs();
-                    } catch (e) { alert('Error: ' + e.message); }
-                },
-                
-                validateSpec() {
-                    if (!this.spec.env_name.match(/^[a-z_][a-z0-9_]*$/)) {
-                        alert('Environment name must be a valid Python identifier (lowercase, numbers, underscores)');
-                        return false;
-                    }
-                    return true;
-                },
-                
-                getSpecPayload() {
-                    const payload = JSON.parse(JSON.stringify(this.spec));
-                    if (!this.usePartialReward) payload.reward.partial_reward = null;
-                    return JSON.stringify(payload);
-                },
-                
-                init() {
-                    this.loadSpecs();
-                    this.$watch('usePartialReward', (value) => {
-                        if (!value) {
-                            this.spec.reward.partial_reward = null;
-                        } else if (this.spec.reward.partial_reward === null) {
-                            this.spec.reward.partial_reward = 0.5;
-                        }
-                    });
-                }
-            }
+                json_success_values_text: ''
+              },
+              scheme: {
+                scheme: 'binary',
+                correct_reward: 1,
+                incorrect_reward: 0,
+                partial_reward: null,
+                format_error_reward: 0
+              }
+            },
+            feedback: {
+              on_incorrect: "Your answer '{answer}' is incorrect. Please try again.",
+              on_format_error: "Please provide your answer in the correct format."
+            },
+            done_condition: 'always_single_step'
+          });
+        },
+
+        augmentSpec(spec) {
+          const payload = JSON.parse(JSON.stringify(spec));
+          payload.reward.creation = payload.reward.creation || {};
+          if (!payload.reward.creation.llm) {
+            payload.reward.creation.llm = {
+              provider: 'mock',
+              model: 'gpt-4o-mini',
+              prompt_template: "You are a strict automated judge for reinforcement learning rewards.\\nGiven the model response:\\n{model_output}\\nand the ground truth reference answer:\\n{ground_truth}\\nReturn a JSON object with keys `score` and `explanation`.",
+              temperature: 0,
+              max_output_tokens: 128,
+              success_threshold: 0.5,
+              response_format: 'score',
+              success_keywords: ['yes', 'correct'],
+              api_key_env: 'OPENAI_API_KEY',
+              api_base: null
+            };
+          }
+          payload.reward.creation.json_success_values = payload.reward.creation.json_success_values || [];
+          payload.reward.creation.json_success_values_text = (payload.reward.creation.json_success_values || []).join(', ');
+          return payload;
+        },
+
+        specPayload() {
+          const payload = JSON.parse(JSON.stringify(this.spec));
+          if (payload.reward.creation.json_success_values_text !== undefined) {
+            payload.reward.creation.json_success_values =
+              payload.reward.creation.json_success_values_text
+                .split(',')
+                .map(v => v.trim())
+                .filter(Boolean);
+            delete payload.reward.creation.json_success_values_text;
+          }
+          return payload;
+        },
+
+        async runPreview() {
+          this.preview.error = null;
+          this.preview.result = null;
+          if (!this.spec.env_name) {
+            this.preview.error = 'Environment name required';
+            return;
+          }
+          try {
+            const response = await fetch('/api/preview', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                spec: this.specPayload(),
+                model_output: this.preview.model_output,
+                ground_truth: this.preview.ground_truth,
+                current_turn: this.preview.current_turn
+              })
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Preview failed');
+            this.preview.result = await response.json();
+          } catch (err) {
+            this.preview.error = err.message;
+          }
+        },
+
+        async saveSpec() {
+          if (!this.spec.env_name.match(/^[a-z_][a-z0-9_]*$/)) {
+            alert('Environment name must be snake_case');
+            return;
+          }
+          try {
+            const response = await fetch('/api/specs', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.specPayload())
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Save failed');
+            this.loadSpecs();
+            alert('Environment saved');
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        async exportEnv() {
+          this.export.success = false;
+          this.export.error = null;
+          try {
+            const response = await fetch('/api/export', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ spec: this.specPayload() })
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Export failed');
+            const data = await response.json();
+            this.export.success = data.success;
+            this.export.message = data.message;
+            alert('Export successful! ' + data.message);
+          } catch (err) {
+            this.export.error = err.message;
+            alert('Export failed: ' + err.message);
+          }
+        },
+
+        async loadSpecs() {
+          try {
+            const response = await fetch('/api/specs');
+            if (response.ok) this.savedSpecs = await response.json();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+
+        async loadSpec(name) {
+          try {
+            const response = await fetch(`/api/specs/${name}`);
+            if (!response.ok) throw new Error('Unable to load spec');
+            const data = await response.json();
+            this.spec = this.augmentSpec(data);
+            this.setTab('env');
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        async deleteSpec(name) {
+          if (!confirm(`Delete ${name}?`)) return;
+          try {
+            const response = await fetch(`/api/specs/${name}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Unable to delete');
+            this.loadSpecs();
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        // Dataset helpers
+        resetDatasetSpec() {
+          this.dataset.spec = {
+            dataset_name: '',
+            description: '',
+            defaults: {
+              data_source: 'custom',
+              env_class: '',
+              reward_spec: { method: 'rule', ground_truth: '', scorer_model: null, scorer_prompt: null, extra: {} },
+              extra_info: {}
+            },
+            splits: [
+              { name: 'train', entries: [] },
+              { name: 'validation', entries: [] }
+            ]
+          };
+          this.dataset.selectedSplit = 'train';
+          this.dataset.defaultsExtraInfoText = '{}';
+        },
+
+        activeDatasetEntries() {
+          const split = this.dataset.spec.splits.find(s => s.name === this.dataset.selectedSplit);
+          return split ? split.entries : [];
+        },
+
+        addDatasetEntry() {
+          const split = this.dataset.spec.splits.find(s => s.name === this.dataset.selectedSplit);
+          if (!split) return;
+          split.entries.push({
+            data_source: '',
+            env_class: '',
+            prompt: [
+              { role: 'system', content: 'You are a helpful assistant.' },
+              { role: 'user', content: 'Question goes here.' }
+            ],
+            reward_spec: { method: 'rule', ground_truth: '' },
+            extra_info: {},
+            extra_info_text: '{}'
+          });
+        },
+
+        removeDatasetEntry(idx) {
+          const split = this.dataset.spec.splits.find(s => s.name === this.dataset.selectedSplit);
+          if (!split) return;
+          split.entries.splice(idx, 1);
+        },
+
+        parseExtraInfo(text) {
+          if (!text || !text.trim()) return {};
+          try {
+            return JSON.parse(text);
+          } catch (err) {
+            throw new Error('Invalid JSON: ' + err.message);
+          }
+        },
+
+        datasetPayload() {
+          const payload = JSON.parse(JSON.stringify(this.dataset.spec));
+          payload.defaults.extra_info = this.parseExtraInfo(this.dataset.defaultsExtraInfoText);
+          for (const split of payload.splits) {
+            split.entries = split.entries.map(entry => {
+              const cloned = JSON.parse(JSON.stringify(entry));
+              const text = entry.extra_info_text || '{}';
+              cloned.extra_info = this.parseExtraInfo(text);
+              delete cloned.extra_info_text;
+              return cloned;
+            });
+          }
+          return payload;
+        },
+
+        async saveDataset() {
+          try {
+            const response = await fetch('/api/datasets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.datasetPayload())
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Save failed');
+            this.dataset.message = 'Dataset saved';
+            this.dataset.error = '';
+            this.loadDatasets();
+          } catch (err) {
+            this.dataset.error = err.message;
+            this.dataset.message = '';
+          }
+        },
+
+        async loadDatasets() {
+          try {
+            const response = await fetch('/api/datasets');
+            if (response.ok) this.dataset.saved = await response.json();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+
+        async loadDataset(name) {
+          try {
+            const response = await fetch(`/api/datasets/${name}`);
+            if (!response.ok) throw new Error('Unable to load dataset');
+            const data = await response.json();
+            data.splits = data.splits || [];
+            data.splits.forEach(split => {
+              split.entries = split.entries || [];
+              split.entries.forEach(entry => {
+                entry.extra_info_text = JSON.stringify(entry.extra_info || {}, null, 2);
+              });
+            });
+            this.dataset.spec = data;
+            this.dataset.defaultsExtraInfoText = JSON.stringify(data.defaults.extra_info || {}, null, 2);
+            this.dataset.selectedSplit = data.splits[0]?.name || 'train';
+            this.setTab('dataset');
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        async deleteDataset(name) {
+          if (!confirm(`Delete dataset ${name}?`)) return;
+          try {
+            const response = await fetch(`/api/datasets/${name}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Delete failed');
+            this.loadDatasets();
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        async exportDataset(format) {
+          try {
+            const response = await fetch('/api/datasets/export', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ spec: this.datasetPayload(), format })
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Export failed');
+            const data = await response.json();
+            this.dataset.message = `Exported to ${data.artifact_dir}`;
+            this.dataset.error = '';
+            this.loadDatasetExports();
+          } catch (err) {
+            this.dataset.error = err.message;
+            this.dataset.message = '';
+          }
+        },
+
+        async loadDatasetExports() {
+          try {
+            const response = await fetch('/api/datasets/exports');
+            if (response.ok) this.datasetExports = await response.json();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+
+        applyExportToTraining(file) {
+          if (file.split.toLowerCase().startsWith('train')) {
+            this.training.form.train_data_text = file.path;
+          } else {
+            this.training.form.val_data_text = file.path;
+          }
+          this.setTab('training');
+        },
+
+        // Training
+        parsePaths(text) {
+          return text
+            .split(/\s+/)
+            .map(v => v.trim())
+            .filter(Boolean);
+        },
+
+        async startTraining() {
+          this.training.error = '';
+          try {
+            const payload = {
+              env_name: this.training.form.env_name,
+              run_name: this.training.form.run_name,
+              train_data: this.parsePaths(this.training.form.train_data_text),
+              val_data: this.parsePaths(this.training.form.val_data_text),
+              hydra_overrides: this.parsePaths(this.training.form.hydra_overrides_text),
+              environment_overrides: {}
+            };
+            const response = await fetch('/api/training/start', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error((await response.json()).detail || 'Launch failed');
+            await this.fetchTrainingRuns();
+          } catch (err) {
+            this.training.error = err.message;
+          }
+        },
+
+        async fetchTrainingRuns() {
+          try {
+            const response = await fetch('/api/training/runs');
+            if (response.ok) this.training.runs = await response.json();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+
+        async stopTraining(run) {
+          try {
+            await fetch(`/api/training/runs/${run.id}/stop`, { method: 'POST' });
+            this.fetchTrainingRuns();
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
+        },
+
+        async tailLogs(run) {
+          if (!run) { this.training.logs = { run_id: null, lines: [] }; return; }
+          try {
+            const response = await fetch(`/api/training/runs/${run.id}/logs`);
+            if (!response.ok) throw new Error('Unable to fetch logs');
+            this.training.logs = await response.json();
+          } catch (err) {
+            alert('Error: ' + err.message);
+          }
         }
-    </script>
+      };
+    }
+  </script>
 </body>
 </html>
