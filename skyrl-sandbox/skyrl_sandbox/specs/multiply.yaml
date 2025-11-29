@@ -1,0 +1,43 @@
+env_name: multiply
+env_type: multi_turn
+max_turns: 3
+parsing:
+  method: regex
+  pattern: \\boxed\{([^}]+)\}
+  json_path: $.answer
+reward:
+  creation:
+    method: parsed_answer_rule
+    rule_type: exact_match
+    numeric_tolerance: 0.01
+    regex_pattern: ''
+    json_path: $.score
+    json_success_values: []
+    json_threshold: null
+    llm:
+      provider: mock
+      model: gpt-4o-mini
+      prompt_template: You are a strict automated judge for reinforcement learning
+        rewards.\nGiven the model response:\n{model_output}\nand the ground truth
+        reference answer:\n{ground_truth}\nReturn a JSON object with keys `score`
+        and `explanation`.
+      temperature: 0.0
+      max_output_tokens: 128
+      success_threshold: 0.5
+      response_format: score
+      success_keywords:
+      - 'yes'
+      - correct
+      api_key_env: OPENAI_API_KEY
+      api_base: null
+  scheme:
+    scheme: partial
+    correct_reward: 1.0
+    incorrect_reward: 0.0
+    partial_reward: 0.5
+    format_error_reward: 0.0
+feedback:
+  on_incorrect: Your answer '{answer}' is incorrect. Please try again.
+  on_format_error: Please provide your answer in the correct format in \\boxed{your_answer}.
+done_condition: correct_or_max_turns
+description: Basic multiplication work

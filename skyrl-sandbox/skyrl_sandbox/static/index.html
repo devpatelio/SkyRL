@@ -10,7 +10,8 @@
   <style>
     [x-cloak] { display: none !important; }
     .code-input { font-family: var(--tblr-font-monospace); }
-    .log-viewer { max-height: 320px; overflow-y: auto; font-family: var(--tblr-font-monospace); background: #0f172a; color: #e2e8f0; }
+    .log-viewer { max-height: 600px; overflow-y: auto; font-family: var(--tblr-font-monospace); background: #0f172a; color: #e2e8f0; padding: 1rem; }
+    .log-viewer pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
     .nav-tabs .nav-link { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
   </style>
 </head>
@@ -31,7 +32,7 @@
           <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
               <a href="#" class="nav-link" :class="{active: activeTab === 'env'}" @click.prevent="setTab('env')">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <span class="nav-link-icon d-md-none">
                   <i class="ti ti-settings"></i>
                 </span>
                 <span class="nav-link-title">Environments</span>
@@ -39,7 +40,7 @@
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link" :class="{active: activeTab === 'dataset'}" @click.prevent="setTab('dataset')">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <span class="nav-link-icon d-md-none">
                   <i class="ti ti-database"></i>
                 </span>
                 <span class="nav-link-title">Datasets</span>
@@ -47,7 +48,7 @@
             </li>
             <li class="nav-item">
               <a href="#" class="nav-link" :class="{active: activeTab === 'training'}" @click.prevent="setTab('training')">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <span class="nav-link-icon d-md-none">
                   <i class="ti ti-rocket"></i>
                 </span>
                 <span class="nav-link-title">Training</span>
@@ -602,9 +603,8 @@
                     <h3 class="card-title">Logs: <span x-text="training.logs.run_id"></span></h3>
                     <button class="btn btn-sm btn-link" @click="tailLogs(null)">Close</button>
                   </div>
-                  <div class="log-viewer card-body">
-                    <pre class="mb-0"><template x-for="line in training.logs.lines"><span x-text="line"></span>
-</template></pre>
+                  <div class="log-viewer card-body" x-ref="logViewer">
+                    <pre class="mb-0" x-text="training.logs.lines.join('\n')"></pre>
                   </div>
                 </div>
               </div>
@@ -636,7 +636,8 @@
           form: { env_name: '', run_name: 'sandbox-run', train_data_text: '', val_data_text: '', hydra_overrides_text: '' },
           runs: [],
           logs: { run_id: null, lines: [] },
-          error: ''
+          error: '',
+          logPollInterval: null
         },
 
         init() {
@@ -1042,13 +1043,67 @@
         },
 
         async tailLogs(run) {
-          if (!run) { this.training.logs = { run_id: null, lines: [] }; return; }
-          try {
-            const response = await fetch(`/api/training/runs/${run.id}/logs`);
-            if (!response.ok) throw new Error('Unable to fetch logs');
-            this.training.logs = await response.json();
-          } catch (err) {
-            alert('Error: ' + err.message);
+          // Stop any existing polling
+          if (this.training.logPollInterval) {
+            clearInterval(this.training.logPollInterval);
+            this.training.logPollInterval = null;
+          }
+          
+          if (!run) { 
+            this.training.logs = { run_id: null, lines: [] }; 
+            return; 
+          }
+          
+          const runId = run.id;
+          const fetchLogs = async () => {
+            try {
+              // Check if run is still running before fetching
+              const currentRun = this.training.runs.find(r => r.id === runId);
+              if (currentRun && currentRun.status !== 'running') {
+                // Run finished, stop polling
+                if (this.training.logPollInterval) {
+                  clearInterval(this.training.logPollInterval);
+                  this.training.logPollInterval = null;
+                }
+                // Fetch logs one more time to get final output
+              }
+              
+              const response = await fetch(`/api/training/runs/${runId}/logs`);
+              if (!response.ok) throw new Error('Unable to fetch logs');
+              const newLogs = await response.json();
+              const wasAtBottom = this.isLogViewerAtBottom();
+              this.training.logs = newLogs;
+              
+              // Auto-scroll to bottom if user was already at bottom or if it's the first load
+              if (wasAtBottom || !this.training.logPollInterval) {
+                this.$nextTick(() => this.scrollLogViewerToBottom());
+              }
+            } catch (err) {
+              console.error('Error fetching logs:', err);
+            }
+          };
+          
+          // Initial fetch
+          await fetchLogs();
+          
+          // Check if run is still running and start polling
+          const currentRun = this.training.runs.find(r => r.id === runId);
+          if (currentRun && currentRun.status === 'running') {
+            this.training.logPollInterval = setInterval(fetchLogs, 2000); // Poll every 2 seconds
+          }
+        },
+        
+        isLogViewerAtBottom() {
+          const viewer = this.$refs.logViewer;
+          if (!viewer) return true;
+          const threshold = 50; // pixels from bottom
+          return viewer.scrollHeight - viewer.scrollTop - viewer.clientHeight < threshold;
+        },
+        
+        scrollLogViewerToBottom() {
+          const viewer = this.$refs.logViewer;
+          if (viewer) {
+            viewer.scrollTop = viewer.scrollHeight;
           }
         }
       };

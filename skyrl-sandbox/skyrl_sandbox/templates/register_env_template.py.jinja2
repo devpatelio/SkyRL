@@ -11,7 +11,7 @@ from skyrl_train.utils import initialize_ray
 
 @ray.remote(num_cpus=1)
 def skyrl_entrypoint(cfg: DictConfig):
-    """Entry point that registers the generated environment and starts training."""
+    """Remote entrypoint executed on workers to run training."""
     register(
         id="{{ spec.env_name }}",
         entry_point="runs.{{ spec.env_name }}.env:{{ spec.env_name.capitalize() }}Env",
@@ -23,7 +23,7 @@ def skyrl_entrypoint(cfg: DictConfig):
 
 @hydra.main(config_path=config_dir, config_name="ppo_base_config", version_base=None)
 def main(cfg: DictConfig) -> None:
-    """Hydra main that initializes Ray and launches the remote entrypoint."""
+    """Hydra main that validates config, initializes Ray, and launches training."""
     validate_cfg(cfg)
     initialize_ray(cfg)
     ray.get(skyrl_entrypoint.remote(cfg))

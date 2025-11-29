@@ -64,7 +64,7 @@ def main():
             host=args.host,
             port=args.port,
             reload=args.reload,
-            log_level="info"
+            log_level="info",
         )
     except KeyboardInterrupt:
         print("\n\nShutting down SkyRL Sandbox...")
