@@ -334,6 +334,7 @@ class SkyRLGymGenerator(GeneratorInterface):
         max_tokens: int,
         max_input_length: int,
         sampling_params: Optional[Dict[str, Any]] = None,
+        trajectory_ids: Optional[List[TrajectoryID]] = None,
     ) -> GeneratorOutput:
         """
         Single-turn batched generation (can use the synchronous offline engine)
@@ -411,6 +412,7 @@ class SkyRLGymGenerator(GeneratorInterface):
             "stop_reasons": stop_reasons,
             "rollout_metrics": rollout_metrics,
             "rollout_logprobs": truncated_logprobs,
+            "trajectory_ids": trajectory_ids,
         }
 
         return generator_output
@@ -435,7 +437,7 @@ class SkyRLGymGenerator(GeneratorInterface):
 
         if self.batched:
             return await self.generate_batched(
-                prompts, env_classes, env_extras, max_tokens, max_input_length, sampling_params
+                prompts, env_classes, env_extras, max_tokens, max_input_length, sampling_params, trajectory_ids
             )
 
         # Async agent loop to generate trajectories in parallel.
@@ -496,6 +498,7 @@ class SkyRLGymGenerator(GeneratorInterface):
             "stop_reasons": stop_reasons,
             "rollout_metrics": rollout_metrics,
             "rollout_logprobs": rollout_logprobs,
+            "trajectory_ids": trajectory_ids,
         }
 
         return generator_output
