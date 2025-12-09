@@ -42,9 +42,7 @@ class LLMVerifierConfig(BaseModel):
     max_output_tokens: int = 200
     success_threshold: float = 0.5
     response_format: Literal["score", "boolean"] = "score"
-    success_keywords: List[str] = Field(
-        default_factory=lambda: ["yes", "correct", "true"]
-    )
+    success_keywords: List[str] = Field(default_factory=lambda: ["yes", "correct", "true"])
     api_key_env: str = "OPENAI_API_KEY"
     api_base: Optional[str] = None
 
@@ -52,12 +50,8 @@ class LLMVerifierConfig(BaseModel):
 class RewardCreationConfig(BaseModel):
     """How to transform outputs into a reward signal before applying schemes."""
 
-    method: Literal["parsed_answer_rule", "json_path_rule", "llm_verifier"] = (
-        "parsed_answer_rule"
-    )
-    rule_type: Literal["exact_match", "regex_match", "numeric_tolerance"] = (
-        "exact_match"
-    )
+    method: Literal["parsed_answer_rule", "json_path_rule", "llm_verifier"] = "parsed_answer_rule"
+    rule_type: Literal["exact_match", "regex_match", "numeric_tolerance"] = "exact_match"
     numeric_tolerance: Optional[float] = None
     regex_pattern: Optional[str] = None
     json_path: Optional[str] = None
@@ -107,6 +101,59 @@ class RewardPipeline(BaseModel):
         return {"creation": creation, "scheme": scheme}
 
 
+class ToolConfig(BaseModel):
+    """Configuration for a single tool."""
+
+    tool_type: Literal["python", "sql", "search"] = "python"
+    enabled: bool = True
+    config: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PythonToolConfig(BaseModel):
+    """Configuration for Python code execution tool."""
+
+    timeout: float = 15.0
+    allowed_imports: List[str] = Field(default_factory=lambda: ["math", "numpy", "pandas"])
+    restrict_file_operations: bool = True
+
+
+class SQLToolConfig(BaseModel):
+    """Configuration for SQL execution tool."""
+
+    db_file_path: Optional[str] = None
+    timeout: float = 30.0
+    read_only: bool = True
+    max_result_rows: int = 1000
+
+
+class SearchToolConfig(BaseModel):
+    """Configuration for search tool."""
+
+    search_url: str = "http://127.0.0.1:8000/retrieve"
+    max_results: int = 10
+    timeout: float = 10.0
+
+
+class ToolsConfig(BaseModel):
+    """Configuration for all tools in an environment."""
+
+    enabled: bool = False
+    python: Optional[PythonToolConfig] = None
+    sql: Optional[SQLToolConfig] = None
+    search: Optional[SearchToolConfig] = None
+
+    def get_enabled_tools(self) -> List[str]:
+        """Return list of enabled tool types."""
+        enabled_tools = []
+        if self.python:
+            enabled_tools.append("python")
+        if self.sql:
+            enabled_tools.append("sql")
+        if self.search:
+            enabled_tools.append("search")
+        return enabled_tools
+
+
 class FeedbackConfig(BaseModel):
     """Configuration for environment feedback messages."""
 
@@ -124,9 +171,7 @@ class EnvironmentSpec(BaseModel):
         description="Name of the environment (e.g., 'multiply', 'text2sql')",
     )
     env_type: Literal["single_turn", "multi_turn"] = "single_turn"
-    max_turns: int = Field(
-        default=3, description="Maximum turns for multi-turn environments"
-    )
+    max_turns: int = Field(default=3, description="Maximum turns for multi-turn environments")
 
     parsing: ParsingConfig
     reward: RewardPipeline = Field(
@@ -136,12 +181,12 @@ class EnvironmentSpec(BaseModel):
     )
     feedback: FeedbackConfig
 
-    done_condition: Literal[
-        "always_single_step", "max_turns_only", "correct_or_max_turns"
-    ] = "always_single_step"
+    done_condition: Literal["always_single_step", "max_turns_only", "correct_or_max_turns"] = "always_single_step"
 
-    description: Optional[str] = Field(
-        None, description="Optional description of the environment"
+    description: Optional[str] = Field(None, description="Optional description of the environment")
+
+    tools: ToolsConfig = Field(
+        default_factory=ToolsConfig, description="Configuration for tools available to the agent"
     )
 
 
@@ -248,6 +293,15 @@ class DatasetExportResponse(BaseModel):
     files: List[Dict[str, Any]]
 
 
+class DatasetImportRequest(BaseModel):
+    """Import dataset from external source."""
+
+    source: Literal["file", "huggingface", "skyrl"] = "file"
+    path: str
+    sample_size: Optional[int] = None
+    split: Optional[str] = None
+
+
 # Training models ------------------------------------------------------------
 
 
@@ -264,7 +318,7 @@ class TrainingLaunchRequest(BaseModel):
     environment_overrides: Dict[str, Any] = Field(default_factory=dict)
     venv_path: Optional[str] = Field(
         default="~/src/venv/skyrl/bin/activate",
-        description="Path to virtual environment activation script. If provided, will be activated before running the training command."
+        description="Path to virtual environment activation script. If provided, will be activated before running the training command.",
     )
 
 
@@ -288,4 +342,3 @@ class TrainingLogsResponse(BaseModel):
     run_id: str
     tail: int = 200
     lines: List[str]
-

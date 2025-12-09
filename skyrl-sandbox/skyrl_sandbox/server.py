@@ -1,6 +1,5 @@
 """FastAPI backend server for SkyRL Sandbox."""
 
-import json
 from pathlib import Path
 from typing import List, Optional
 
@@ -15,6 +14,7 @@ from skyrl_sandbox.dataset_utils import DatasetManager
 from skyrl_sandbox.models import (
     DatasetExportRequest,
     DatasetExportResponse,
+    DatasetImportRequest,
     DatasetSpec,
     EnvironmentSpec,
     ExportRequest,
@@ -55,7 +55,7 @@ def create_app() -> FastAPI:
         description="Web interface for building SkyRL-Gym environments",
         version="0.0.1",
     )
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -64,7 +64,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Ensure specs directory exists
     specs_dir = get_specs_dir()
     specs_dir.mkdir(parents=True, exist_ok=True)
@@ -79,7 +79,7 @@ def create_app() -> FastAPI:
     except RuntimeError as exc:
         training_manager = None
         print(f"[sandbox] Training manager disabled: {exc}")
-    
+
     @app.get("/")
     async def root():
         """Serve the main HTML page."""
@@ -88,63 +88,63 @@ def create_app() -> FastAPI:
         if index_file.exists():
             return FileResponse(index_file)
         return {"message": "SkyRL Sandbox API is running. Frontend not yet built."}
-    
+
     @app.get("/api/health")
     async def health():
         """Health check endpoint."""
         return {"status": "ok", "service": "skyrl-sandbox"}
-    
+
     @app.get("/api/specs", response_model=List[str])
     async def list_specs():
         """List all saved environment specs."""
         specs_dir = get_specs_dir()
         yaml_files = list(specs_dir.glob("*.yaml"))
         return [f.stem for f in yaml_files]
-    
+
     @app.get("/api/specs/{name}", response_model=EnvironmentSpec)
     async def get_spec(name: str):
         """Get a specific environment spec."""
         specs_dir = get_specs_dir()
         spec_file = specs_dir / f"{name}.yaml"
-        
+
         if not spec_file.exists():
             raise HTTPException(status_code=404, detail=f"Spec '{name}' not found")
-        
+
         try:
             with open(spec_file, "r") as f:
                 data = yaml.safe_load(f)
             return EnvironmentSpec(**data)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error loading spec: {str(e)}")
-    
+
     @app.post("/api/specs", response_model=dict)
     async def save_spec(spec: EnvironmentSpec):
         """Save or update an environment spec."""
         specs_dir = get_specs_dir()
         spec_file = specs_dir / f"{spec.env_name}.yaml"
-        
+
         try:
             with open(spec_file, "w") as f:
                 yaml.dump(spec.model_dump(), f, default_flow_style=False, sort_keys=False)
             return {"success": True, "message": f"Spec '{spec.env_name}' saved successfully"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error saving spec: {str(e)}")
-    
+
     @app.delete("/api/specs/{name}")
     async def delete_spec(name: str):
         """Delete an environment spec."""
         specs_dir = get_specs_dir()
         spec_file = specs_dir / f"{name}.yaml"
-        
+
         if not spec_file.exists():
             raise HTTPException(status_code=404, detail=f"Spec '{name}' not found")
-        
+
         try:
             spec_file.unlink()
             return {"success": True, "message": f"Spec '{name}' deleted successfully"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error deleting spec: {str(e)}")
-    
+
     @app.post("/api/preview", response_model=PreviewResponse)
     async def preview(request: PreviewRequest):
         """Preview reward calculation with sample data."""
@@ -158,17 +158,13 @@ def create_app() -> FastAPI:
             return PreviewResponse(**result)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in preview: {str(e)}")
-    
+
     @app.post("/api/export", response_model=ExportResponse)
     async def export(request: ExportRequest):
         """Generate code files for an environment."""
         try:
             success, message, files_created = export_environment(request.spec)
-            return ExportResponse(
-                success=success,
-                message=message,
-                files_created=files_created
-            )
+            return ExportResponse(success=success, message=message, files_created=files_created)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error in export: {str(e)}")
 
@@ -176,6 +172,29 @@ def create_app() -> FastAPI:
     @app.get("/api/datasets", response_model=List[str])
     async def list_datasets():
         return dataset_manager.list_specs()
+
+    # Specific routes must come before parametric routes
+    @app.get("/api/datasets/exports", response_model=List[dict])
+    async def list_dataset_exports():
+        return dataset_manager.list_exports()
+
+    @app.post("/api/datasets/export", response_model=DatasetExportResponse)
+    async def export_dataset(request: DatasetExportRequest):
+        try:
+            return dataset_manager.export(request.spec, fmt=request.format)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.post("/api/datasets/import", response_model=DatasetSpec)
+    async def import_dataset(request: DatasetImportRequest):
+        """Import dataset from external source."""
+        try:
+            imported_spec = dataset_manager.import_from_source(
+                source=request.source, path=request.path, sample_size=request.sample_size, split=request.split
+            )
+            return imported_spec
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
 
     @app.get("/api/datasets/{name}", response_model=DatasetSpec)
     async def get_dataset(name: str):
@@ -200,16 +219,29 @@ def create_app() -> FastAPI:
         except FileNotFoundError:
             raise HTTPException(status_code=404, detail=f"Dataset '{name}' not found")
 
-    @app.post("/api/datasets/export", response_model=DatasetExportResponse)
-    async def export_dataset(request: DatasetExportRequest):
+    @app.post("/api/datasets/{name}/statistics", response_model=dict)
+    async def get_dataset_statistics(name: str):
+        """Get statistics for a dataset."""
         try:
-            return dataset_manager.export(request.spec, fmt=request.format)
+            spec = dataset_manager.load_spec(name)
+            stats = dataset_manager.get_dataset_statistics(spec)
+            return stats
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Dataset '{name}' not found")
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
+            raise HTTPException(status_code=500, detail=str(exc))
 
-    @app.get("/api/datasets/exports", response_model=List[dict])
-    async def list_dataset_exports():
-        return dataset_manager.list_exports()
+    @app.post("/api/datasets/{name}/preview", response_model=List[dict])
+    async def get_dataset_preview(name: str, max_entries: int = 3):
+        """Get a preview of dataset entries."""
+        try:
+            spec = dataset_manager.load_spec(name)
+            preview = dataset_manager.get_dataset_preview(spec, max_entries)
+            return preview
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Dataset '{name}' not found")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
 
     # Training endpoints -----------------------------------------------------
     def _require_training_manager() -> TrainingManager:
@@ -259,7 +291,7 @@ def create_app() -> FastAPI:
             return manager.get_logs(run_id, tail=tail)
         except (KeyError, FileNotFoundError) as exc:
             raise HTTPException(status_code=404, detail=str(exc))
-    
+
     # Mount static files for specific paths only (not at root to avoid interfering with API routes)
     # Serve static assets from their respective directories
     static_dir = get_static_dir()
@@ -268,17 +300,16 @@ def create_app() -> FastAPI:
         astro_dir = static_dir / "_astro"
         if astro_dir.exists():
             app.mount("/_astro", StaticFiles(directory=astro_dir), name="astro-assets")
-        
+
         # You can add other specific static directories here as needed
         # For example, if you have images, css, js folders:
         for subdir_name in ["images", "css", "js", "assets"]:
             subdir = static_dir / subdir_name
             if subdir.exists():
                 app.mount(f"/{subdir_name}", StaticFiles(directory=subdir), name=f"{subdir_name}-files")
-    
+
     return app
 
 
 # Create the app instance
 app = create_app()
-

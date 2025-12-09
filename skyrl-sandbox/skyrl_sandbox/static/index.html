@@ -272,6 +272,100 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="card mb-4">
+                  <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                      <h3 class="card-title mb-0">Tools</h3>
+                      <small class="text-muted">Enable agent tools for code, data, and search</small>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" x-model="spec.tools.enabled">
+                      <label class="form-check-label">Enable tools</label>
+                    </div>
+                  </div>
+                  <div class="card-body" x-show="spec.tools.enabled">
+                    <!-- Python Tool -->
+                    <div class="mb-4">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label mb-0 fw-bold">Python Code Execution</label>
+                        <div class="form-check form-switch">
+                          <input class="form-check-input" type="checkbox" x-model="spec.tools.python_enabled">
+                        </div>
+                      </div>
+                      <div x-show="spec.tools.python_enabled" class="row g-3 ms-3">
+                        <div class="col-md-4">
+                          <label class="form-label">Timeout (seconds)</label>
+                          <input type="number" class="form-control" x-model.number="spec.tools.python.timeout" placeholder="15">
+                        </div>
+                        <div class="col-md-8">
+                          <label class="form-label">Allowed imports (comma separated)</label>
+                          <input type="text" class="form-control" x-model="spec.tools.python.allowed_imports_text" placeholder="math, numpy, pandas">
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" x-model="spec.tools.python.restrict_file_operations">
+                            <label class="form-check-label">Restrict file operations</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- SQL Tool -->
+                    <div class="mb-4">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label mb-0 fw-bold">SQL Database</label>
+                        <div class="form-check form-switch">
+                          <input class="form-check-input" type="checkbox" x-model="spec.tools.sql_enabled">
+                        </div>
+                      </div>
+                      <div x-show="spec.tools.sql_enabled" class="row g-3 ms-3">
+                        <div class="col-md-6">
+                          <label class="form-label">Database file path</label>
+                          <input type="text" class="form-control" x-model="spec.tools.sql.db_file_path" placeholder="/path/to/database.sqlite">
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Timeout (seconds)</label>
+                          <input type="number" class="form-control" x-model.number="spec.tools.sql.timeout" placeholder="30">
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" x-model="spec.tools.sql.read_only">
+                            <label class="form-check-label">Read only</label>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Max result rows</label>
+                          <input type="number" class="form-control" x-model.number="spec.tools.sql.max_result_rows" placeholder="1000">
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Search Tool -->
+                    <div class="mb-3">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label mb-0 fw-bold">Search/Retrieval</label>
+                        <div class="form-check form-switch">
+                          <input class="form-check-input" type="checkbox" x-model="spec.tools.search_enabled">
+                        </div>
+                      </div>
+                      <div x-show="spec.tools.search_enabled" class="row g-3 ms-3">
+                        <div class="col-md-8">
+                          <label class="form-label">Search URL</label>
+                          <input type="text" class="form-control" x-model="spec.tools.search.search_url" placeholder="http://127.0.0.1:8000/retrieve">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Max results</label>
+                          <input type="number" class="form-control" x-model.number="spec.tools.search.max_results" placeholder="10">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">Timeout (seconds)</label>
+                          <input type="number" class="form-control" x-model.number="spec.tools.search.timeout" placeholder="10">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="col-lg-4">
@@ -297,19 +391,19 @@
                       <div class="card-body">
                         <div class="d-flex justify-content-between">
                           <span class="text-muted">Parsed</span>
-                          <code x-text="preview.result.parsed_answer || 'null'"></code>
+                          <code x-text="preview.result?.parsed_answer || 'null'"></code>
                         </div>
                         <div class="d-flex justify-content-between">
                           <span class="text-muted">Reward</span>
-                          <span class="fw-bold" x-text="preview.result.reward"></span>
+                          <span class="fw-bold" x-text="preview.result?.reward || 0"></span>
                         </div>
                         <div class="d-flex justify-content-between">
                           <span class="text-muted">Done</span>
-                          <span x-text="preview.result.done ? 'Yes' : 'No'"></span>
+                          <span x-text="preview.result?.done ? 'Yes' : 'No'"></span>
                         </div>
-                        <div class="mt-2" x-show="preview.result.feedback">
+                        <div class="mt-2" x-show="preview.result?.feedback">
                           <small class="text-muted">Feedback</small>
-                          <div class="alert alert-info mt-1" x-text="preview.result.feedback"></div>
+                          <div class="alert alert-info mt-1" x-text="preview.result?.feedback"></div>
                         </div>
                       </div>
                     </div>
@@ -378,18 +472,53 @@
                       </div>
                       <div class="col-md-4">
                         <label class="form-label">Default env class</label>
-                        <input type="text" class="form-control" x-model="dataset.spec.defaults.env_class">
+                        <div class="mb-2">
+                          <select class="form-select" x-model="dataset.spec.defaults.env_class" x-show="!dataset.useCustomEnvClass">
+                            <option value="">Select environment...</option>
+                            <template x-for="env in savedSpecs" :key="env">
+                              <option :value="env" x-text="env"></option>
+                            </template>
+                          </select>
+                          <input type="text" class="form-control" x-model="dataset.spec.defaults.env_class" 
+                                 x-show="dataset.useCustomEnvClass"
+                                 placeholder="Enter custom env class">
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" x-model="dataset.useCustomEnvClass" id="customEnvCheck">
+                          <label class="form-check-label" for="customEnvCheck">
+                            Use custom env class
+                          </label>
+                        </div>
+                        <small class="form-text text-muted">Select from saved environments or enter custom class name</small>
                       </div>
-                      <div class="col-md-4">
-                        <label class="form-label">Reward method</label>
-                        <select class="form-select" x-model="dataset.spec.defaults.reward_spec.method">
-                          <option value="rule">Rule based</option>
-                          <option value="reward_model">Reward model</option>
-                        </select>
-                      </div>
-                      <div class="col-md-6" x-show="dataset.spec.defaults.reward_spec.method === 'rule'">
-                        <label class="form-label">Default ground truth</label>
-                        <input type="text" class="form-control" x-model="dataset.spec.defaults.reward_spec.ground_truth">
+                      <div class="col-12">
+                        <label class="form-label">Default reward specification</label>
+                        <div class="card bg-light">
+                          <div class="card-body">
+                            <div class="row g-2">
+                              <div class="col-md-4">
+                                <label class="form-label">Method</label>
+                                <select class="form-select" x-model="dataset.spec.defaults.reward_spec.method">
+                                  <option value="rule">Rule based</option>
+                                  <option value="reward_model">Reward model</option>
+                                </select>
+                              </div>
+                              <div class="col-md-8" x-show="dataset.spec.defaults.reward_spec.method === 'rule'">
+                                <label class="form-label">Default ground truth</label>
+                                <input type="text" class="form-control" x-model="dataset.spec.defaults.reward_spec.ground_truth" placeholder="Expected answer or value">
+                              </div>
+                              <div class="col-md-8" x-show="dataset.spec.defaults.reward_spec.method === 'reward_model'">
+                                <label class="form-label">Scorer model</label>
+                                <input type="text" class="form-control" x-model="dataset.spec.defaults.reward_spec.scorer_model" placeholder="gpt-4o-mini">
+                              </div>
+                              <div class="col-12" x-show="dataset.spec.defaults.reward_spec.method === 'reward_model'">
+                                <label class="form-label">Scorer prompt template</label>
+                                <textarea class="form-control code-input" rows="3" x-model="dataset.spec.defaults.reward_spec.scorer_prompt" 
+                                          placeholder="Judge the quality of the response given the expected answer..."></textarea>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       <div class="col-md-6">
                         <label class="form-label">Default extra info (JSON)</label>
@@ -397,6 +526,79 @@
                                   x-model="dataset.defaultsExtraInfoText"></textarea>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Dataset Column Mapping -->
+                <div class="card mb-4" x-show="rawImportedData">
+                  <div class="card-header">
+                    <h3 class="card-title">Map Dataset Columns</h3>
+                  </div>
+                  <div class="card-body">
+                    
+                    <!-- Dataset Preview -->
+                    <div class="mb-4">
+                      <h5>Dataset Preview</h5>
+                      <div class="table-responsive">
+                        <table class="table table-sm">
+                          <thead>
+                            <tr>
+                              <th>Column</th>
+                              <th>Sample Values</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <template x-for="column in datasetPreview.columns" :key="column">
+                              <tr>
+                                <td><strong x-text="column"></strong></td>
+                                <td>
+                                  <template x-for="(row, idx) in datasetPreview.sample_rows.slice(0, 3)" :key="idx">
+                                    <div class="text-truncate small" style="max-width: 300px;" 
+                                         x-text="typeof row[column] === 'string' ? row[column].substring(0, 150) + '...' : JSON.stringify(row[column])"></div>
+                                  </template>
+                                </td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Column Mapping -->
+                    <div class="row g-3 mb-4">
+                      <div class="col-md-6">
+                        <label class="form-label">Prompt Column</label>
+                        <select class="form-select" x-model="columnMapping.prompt_column">
+                          <option value="">Select column for user prompt...</option>
+                          <template x-for="column in datasetPreview.columns" :key="column">
+                            <option :value="column" x-text="column"></option>
+                          </template>
+                        </select>
+                        <small class="form-text text-muted">Column containing the question/instruction</small>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Ground Truth Column</label>
+                        <select class="form-select" x-model="columnMapping.ground_truth_column">
+                          <option value="">Select column for answers...</option>
+                          <template x-for="column in datasetPreview.columns" :key="column">
+                            <option :value="column" x-text="column"></option>
+                          </template>
+                        </select>
+                        <small class="form-text text-muted">Column containing the expected answer</small>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">System Prompt (optional)</label>
+                        <input type="text" class="form-control" x-model="columnMapping.system_prompt" 
+                               placeholder="You are a helpful assistant.">
+                        <small class="form-text text-muted">System message to add to each conversation</small>
+                      </div>
+                    </div>
+
+                    <!-- Transform Button -->
+                    <button class="btn btn-success w-100" @click="transformDataset()" 
+                            :disabled="!columnMapping.prompt_column">
+                      <i class="ti ti-wand"></i> Transform Dataset to SkyRL Format
+                    </button>
                   </div>
                 </div>
 
@@ -450,14 +652,88 @@
               </div>
 
               <div class="col-lg-4">
+                <!-- Import Dataset -->
                 <div class="card mb-4">
                   <div class="card-header">
-                    <h3 class="card-title">Dataset actions</h3>
+                    <h3 class="card-title">Import Dataset</h3>
                   </div>
                   <div class="card-body">
-                    <button class="btn btn-success w-100 mb-2" @click="saveDataset()">Save dataset</button>
-                    <button class="btn btn-outline-primary w-100 mb-2" @click="exportDataset('json')">Export JSON</button>
-                    <button class="btn btn-outline-primary w-100" @click="exportDataset('parquet')">Export Parquet</button>
+                    <div class="mb-3">
+                      <label class="form-label">Source</label>
+                      <select class="form-select" x-model="importData.source">
+                        <option value="file">Local File</option>
+                        <option value="huggingface">Hugging Face</option>
+                        <option value="skyrl">SkyRL Examples</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">
+                        <span x-show="importData.source === 'file'">File Path</span>
+                        <span x-show="importData.source === 'huggingface'">Dataset ID</span>
+                        <span x-show="importData.source === 'skyrl'">Example Name</span>
+                      </label>
+                      <input type="text" class="form-control" x-model="importData.path" 
+                             :placeholder="importData.source === 'file' ? '/path/to/dataset.json' : 
+                                          importData.source === 'huggingface' ? 'openai/gsm8k' : 
+                                          'simple_qa, math_word_problems, coding_tasks'">
+                    </div>
+                    
+                    <!-- Hugging Face specific options -->
+                    <div x-show="importData.source === 'huggingface'" class="mb-3">
+                      <label class="form-label">Split</label>
+                      <input type="text" class="form-control" x-model="importData.split" 
+                             placeholder="train">
+                      <small class="form-text text-muted">Dataset split to import (train, test, validation, etc.)</small>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Sample Size (optional)</label>
+                      <input type="number" class="form-control" x-model.number="importData.sampleSize" 
+                             placeholder="Leave empty for full dataset">
+                    </div>
+                    <button class="btn btn-primary w-100" @click="importDataset()" :disabled="!importData.path">
+                      <i class="ti ti-download"></i> Import Dataset
+                    </button>
+                  </div>
+                </div>
+
+
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Validation & Actions</h3>
+                  </div>
+                  <div class="card-body">
+                    <button class="btn btn-outline-secondary w-100 mb-2" @click="validateDataset()">
+                      <i class="ti ti-check"></i> Validate Dataset
+                    </button>
+                    <div x-show="dataset.validation.show" class="mb-3">
+                      <div class="alert alert-success" x-show="dataset.validation.valid">
+                        <strong>✓ Dataset Valid</strong>
+                        <div x-text="dataset.validation.summary"></div>
+                      </div>
+                      <div class="alert alert-warning" x-show="!dataset.validation.valid && dataset.validation.warnings.length">
+                        <strong>⚠ Warnings:</strong>
+                        <ul class="mb-0">
+                          <template x-for="warning in dataset.validation.warnings">
+                            <li x-text="warning"></li>
+                          </template>
+                        </ul>
+                      </div>
+                      <div class="alert alert-danger" x-show="!dataset.validation.valid && dataset.validation.errors.length">
+                        <strong>✗ Errors:</strong>
+                        <ul class="mb-0">
+                          <template x-for="error in dataset.validation.errors">
+                            <li x-text="error"></li>
+                          </template>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 mb-2" @click="saveDataset()" 
+                            :disabled="dataset.validation.show && !dataset.validation.valid">Save dataset</button>
+                    <button class="btn btn-outline-primary w-100 mb-2" @click="exportDataset('json')"
+                            :disabled="dataset.validation.show && !dataset.validation.valid">Export JSON</button>
+                    <button class="btn btn-outline-primary w-100" @click="exportDataset('parquet')"
+                            :disabled="dataset.validation.show && !dataset.validation.valid">Export Parquet</button>
                     <div class="alert alert-info mt-3" x-show="dataset.message" x-text="dataset.message"></div>
                     <div class="alert alert-danger mt-3" x-show="dataset.error" x-text="dataset.error"></div>
                   </div>
@@ -481,6 +757,50 @@
                         </div>
                       </div>
                     </template>
+                  </div>
+                </div>
+
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">Dataset Statistics</h3>
+                  </div>
+                  <div class="card-body" x-show="dataset.spec.splits && dataset.spec.splits.length > 0">
+                    <div class="row g-3 text-center">
+                      <div class="col-md-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                          <div>
+                            <div class="h2 mb-0" x-text="dataset.spec.splits ? dataset.spec.splits.length : 0"></div>
+                            <small class="text-muted">Splits</small>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                          <div>
+                            <div class="h2 mb-0" x-text="getTotalEntries()"></div>
+                            <small class="text-muted">Total Entries</small>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="d-flex align-items-center justify-content-center">
+                          <div>
+                            <div class="h2 mb-0" x-text="getAvgMessagesPerEntry()"></div>
+                            <small class="text-muted">Avg Msgs/Entry</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <hr>
+                    <template x-for="split in dataset.spec.splits" :key="split.name">
+                      <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted" x-text="split.name + ' split'"></span>
+                        <span x-text="(split.entries || []).length + ' entries'"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="card-body" x-show="!dataset.spec.splits || dataset.spec.splits.length === 0">
+                    <div class="text-muted text-center">No dataset loaded</div>
                   </div>
                 </div>
 
@@ -616,6 +936,8 @@
     </div>
   </div>
 
+  <!-- Modal removed - using inline form instead -->
+
   <script>
     function sandboxApp() {
       return {
@@ -630,9 +952,25 @@
           selectedSplit: 'train',
           message: '',
           error: '',
-          defaultsExtraInfoText: '{}'
+          defaultsExtraInfoText: '{}',
+          useCustomEnvClass: false,
+          validation: {
+            show: false,
+            valid: false,
+            errors: [],
+            warnings: [],
+            summary: ''
+          }
         },
         datasetExports: [],
+        importData: { source: 'file', path: '', sampleSize: null, split: 'train' },
+        rawImportedData: null,
+        datasetPreview: { columns: [], sample_rows: [] },
+        columnMapping: {
+          prompt_column: '',
+          ground_truth_column: '',
+          system_prompt: 'You are a helpful assistant.'
+        },
         training: {
           form: { env_name: '', run_name: 'sandbox-run', train_data_text: '', val_data_text: '', hydra_overrides_text: '' },
           runs: [],
@@ -694,7 +1032,29 @@
               on_incorrect: "Your answer '{answer}' is incorrect. Please try again.",
               on_format_error: "Please provide your answer in the correct format."
             },
-            done_condition: 'always_single_step'
+            done_condition: 'always_single_step',
+            tools: {
+              enabled: false,
+              python_enabled: false,
+              sql_enabled: false,
+              search_enabled: false,
+              python: {
+                timeout: 15.0,
+                allowed_imports_text: 'math, numpy, pandas',
+                restrict_file_operations: true
+              },
+              sql: {
+                db_file_path: '',
+                timeout: 30.0,
+                read_only: true,
+                max_result_rows: 1000
+              },
+              search: {
+                search_url: 'http://127.0.0.1:8000/retrieve',
+                max_results: 10,
+                timeout: 10.0
+              }
+            }
           });
         },
 
@@ -717,6 +1077,39 @@
           }
           payload.reward.creation.json_success_values = payload.reward.creation.json_success_values || [];
           payload.reward.creation.json_success_values_text = (payload.reward.creation.json_success_values || []).join(', ');
+          
+          // Convert tools backend format to UI format
+          if (!payload.tools) {
+            payload.tools = {
+              enabled: false,
+              python_enabled: false,
+              sql_enabled: false,
+              search_enabled: false,
+              python: { timeout: 15.0, allowed_imports_text: 'math, numpy, pandas', restrict_file_operations: true },
+              sql: { db_file_path: '', timeout: 30.0, read_only: true, max_result_rows: 1000 },
+              search: { search_url: 'http://127.0.0.1:8000/retrieve', max_results: 10, timeout: 10.0 }
+            };
+          } else {
+            // Convert backend format to UI format
+            payload.tools.python_enabled = !!payload.tools.python;
+            payload.tools.sql_enabled = !!payload.tools.sql;
+            payload.tools.search_enabled = !!payload.tools.search;
+            
+            if (payload.tools.python) {
+              payload.tools.python.allowed_imports_text = (payload.tools.python.allowed_imports || []).join(', ');
+            } else {
+              payload.tools.python = { timeout: 15.0, allowed_imports_text: 'math, numpy, pandas', restrict_file_operations: true };
+            }
+            
+            if (!payload.tools.sql) {
+              payload.tools.sql = { db_file_path: '', timeout: 30.0, read_only: true, max_result_rows: 1000 };
+            }
+            
+            if (!payload.tools.search) {
+              payload.tools.search = { search_url: 'http://127.0.0.1:8000/retrieve', max_results: 10, timeout: 10.0 };
+            }
+          }
+          
           return payload;
         },
 
@@ -730,6 +1123,47 @@
                 .filter(Boolean);
             delete payload.reward.creation.json_success_values_text;
           }
+          
+          // Convert tools UI format to backend format
+          if (payload.tools) {
+            const toolsConfig = {
+              enabled: payload.tools.enabled
+            };
+            
+            if (payload.tools.python_enabled && payload.tools.python) {
+              toolsConfig.python = {
+                timeout: payload.tools.python.timeout,
+                allowed_imports: payload.tools.python.allowed_imports_text
+                  .split(',')
+                  .map(v => v.trim())
+                  .filter(Boolean),
+                restrict_file_operations: payload.tools.python.restrict_file_operations
+              };
+            }
+            
+            if (payload.tools.sql_enabled && payload.tools.sql) {
+              toolsConfig.sql = {
+                db_file_path: payload.tools.sql.db_file_path || null,
+                timeout: payload.tools.sql.timeout,
+                read_only: payload.tools.sql.read_only,
+                max_result_rows: payload.tools.sql.max_result_rows
+              };
+            }
+            
+            if (payload.tools.search_enabled && payload.tools.search) {
+              toolsConfig.search = {
+                search_url: payload.tools.search.search_url,
+                max_results: payload.tools.search.max_results,
+                timeout: payload.tools.search.timeout
+              };
+            }
+            
+            payload.tools = toolsConfig;
+            delete payload.tools.python_enabled;
+            delete payload.tools.sql_enabled;
+            delete payload.tools.search_enabled;
+          }
+          
           return payload;
         },
 
@@ -958,6 +1392,86 @@
           }
         },
 
+        validateDataset() {
+          const errors = [];
+          const warnings = [];
+          
+          // Reset validation state
+          this.dataset.validation.show = true;
+          this.dataset.validation.errors = [];
+          this.dataset.validation.warnings = [];
+          
+          const spec = this.dataset.spec;
+          
+          // Basic required fields
+          if (!spec.dataset_name) errors.push('Dataset name is required');
+          if (!spec.defaults?.env_class) errors.push('Default environment class is required');
+          
+          // Check if env_class exists in saved environments
+          if (spec.defaults?.env_class && this.savedSpecs.length > 0) {
+            if (!this.savedSpecs.includes(spec.defaults.env_class)) {
+              warnings.push(`Environment class '${spec.defaults.env_class}' not found in saved environments`);
+            }
+          }
+          
+          // Validate splits
+          if (!spec.splits || spec.splits.length === 0) {
+            errors.push('At least one dataset split is required');
+          } else {
+            let totalEntries = 0;
+            spec.splits.forEach(split => {
+              if (!split.entries || split.entries.length === 0) {
+                warnings.push(`Split '${split.name}' has no entries`);
+              } else {
+                totalEntries += split.entries.length;
+                // Validate each entry
+                split.entries.forEach((entry, idx) => {
+                  if (!entry.prompt || !Array.isArray(entry.prompt) || entry.prompt.length === 0) {
+                    errors.push(`Entry ${idx + 1} in '${split.name}' missing valid prompt`);
+                  } else {
+                    // Check prompt message format
+                    const invalidMsgs = entry.prompt.filter(msg => !msg.role || !msg.content);
+                    if (invalidMsgs.length > 0) {
+                      errors.push(`Entry ${idx + 1} in '${split.name}' has invalid message format (missing role/content)`);
+                    }
+                  }
+                  
+                  if (!entry.reward_spec?.ground_truth) {
+                    errors.push(`Entry ${idx + 1} in '${split.name}' missing ground truth in reward_spec`);
+                  }
+                });
+              }
+            });
+            
+            if (totalEntries === 0) {
+              errors.push('Dataset has no entries across all splits');
+            }
+          }
+          
+          // Validate reward spec
+          if (spec.defaults?.reward_spec?.method === 'rule' && !spec.defaults.reward_spec.ground_truth) {
+            warnings.push('Default reward spec uses rule method but no default ground truth provided');
+          }
+          
+          // Check for valid JSON in extra_info
+          try {
+            JSON.parse(this.dataset.defaultsExtraInfoText || '{}');
+          } catch (e) {
+            errors.push('Invalid JSON in default extra info');
+          }
+          
+          // Set validation results
+          this.dataset.validation.errors = errors;
+          this.dataset.validation.warnings = warnings;
+          this.dataset.validation.valid = errors.length === 0;
+          
+          if (this.dataset.validation.valid) {
+            const totalEntries = spec.splits.reduce((sum, split) => sum + (split.entries?.length || 0), 0);
+            const splitCount = spec.splits.length;
+            this.dataset.validation.summary = `${totalEntries} entries across ${splitCount} splits. Ready for export!`;
+          }
+        },
+
         async exportDataset(format) {
           try {
             const response = await fetch('/api/datasets/export', {
@@ -1105,6 +1619,183 @@
           const viewer = this.$refs.logViewer;
           if (viewer) {
             viewer.scrollTop = viewer.scrollHeight;
+          }
+        },
+
+        // Dataset helper functions
+        getTotalEntries() {
+          if (!this.dataset.spec.splits) return 0;
+          return this.dataset.spec.splits.reduce((sum, split) => sum + (split.entries?.length || 0), 0);
+        },
+
+        getAvgMessagesPerEntry() {
+          if (!this.dataset.spec.splits) return 0;
+          let totalMessages = 0;
+          let totalEntries = 0;
+          
+          this.dataset.spec.splits.forEach(split => {
+            if (split.entries) {
+              split.entries.forEach(entry => {
+                if (entry.prompt && Array.isArray(entry.prompt)) {
+                  totalMessages += entry.prompt.length;
+                  totalEntries++;
+                }
+              });
+            }
+          });
+          
+          return totalEntries > 0 ? Math.round((totalMessages / totalEntries) * 10) / 10 : 0;
+        },
+
+        async importDataset() {
+          try {
+            this.dataset.message = '';
+            this.dataset.error = '';
+            
+            const payload = {
+              source: this.importData.source,
+              path: this.importData.path,
+              sample_size: this.importData.sampleSize || null,
+              split: this.importData.split || null
+            };
+            
+            const response = await fetch('/api/datasets/import', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) throw new Error((await response.json()).detail || 'Import failed');
+            
+            const importedData = await response.json();
+            
+            // Extract raw data from the extra_info field for transformation
+            const rawEntries = importedData.splits[0]?.entries || [];
+            this.rawImportedData = rawEntries.map(entry => entry.extra_info?.raw_data || entry);
+            
+            // Analyze dataset structure for column mapping
+            this.analyzeDatasetStructure();
+            
+            this.dataset.spec = {
+              dataset_name: importedData.dataset_name || 'imported_dataset',
+              description: importedData.description || 'Imported dataset awaiting column mapping',
+              defaults: importedData.defaults || { data_source: 'imported', env_class: 'custom_env', reward_spec: { method: 'rule' } },
+              splits: []  // Will be populated after transformation
+            };
+            this.dataset.defaultsExtraInfoText = JSON.stringify(this.dataset.spec.defaults?.extra_info || {}, null, 2);
+            this.dataset.selectedSplit = 'train';
+            this.dataset.message = `Dataset imported! Found ${this.rawImportedData.length} entries with ${this.datasetPreview.columns.length} columns. Map columns below to transform.`;
+            
+            // Clear import form on success
+            this.importData.path = '';
+            this.importData.sampleSize = null;
+            this.importData.split = 'train';
+            
+          } catch (err) {
+            this.dataset.error = err.message;
+          }
+        },
+
+        // Dataset Analysis and Transformation functions
+        analyzeDatasetStructure() {
+          if (!this.rawImportedData || !this.rawImportedData.length) {
+            this.datasetPreview = { columns: [], sample_rows: [] };
+            return;
+          }
+          
+          // Get first item to analyze structure
+          const firstItem = this.rawImportedData[0];
+          const columns = Object.keys(firstItem || {});
+          
+          // Take first 5 rows as samples
+          const sample_rows = this.rawImportedData.slice(0, 5);
+          
+          this.datasetPreview = { columns, sample_rows };
+          
+          // Auto-detect common column names
+          this.autoDetectColumns(columns);
+        },
+        
+        autoDetectColumns(columns) {
+          // Auto-detect prompt column
+          const promptCandidates = ['question', 'prompt', 'input', 'text', 'instruction', 'query'];
+          const promptColumn = columns.find(col => 
+            promptCandidates.some(candidate => col.toLowerCase().includes(candidate))
+          );
+          if (promptColumn) this.columnMapping.prompt_column = promptColumn;
+          
+          // Auto-detect ground truth column  
+          const answerCandidates = ['answer', 'solution', 'output', 'target', 'label', 'ground_truth', 'response'];
+          const answerColumn = columns.find(col => 
+            answerCandidates.some(candidate => col.toLowerCase().includes(candidate))
+          );
+          if (answerColumn) this.columnMapping.ground_truth_column = answerColumn;
+        },
+
+        transformDataset() {
+          try {
+            if (!this.rawImportedData || !this.rawImportedData.length) {
+              throw new Error('No raw data available for transformation');
+            }
+            
+            if (!this.columnMapping.prompt_column) {
+              throw new Error('Please select a prompt column');
+            }
+            
+            // Transform data using column mapping
+            const entries = this.rawImportedData.map((item, idx) => {
+              const prompt = [];
+              
+              // Add system message if provided
+              if (this.columnMapping.system_prompt.trim()) {
+                prompt.push({
+                  role: 'system',
+                  content: this.columnMapping.system_prompt.trim()
+                });
+              }
+              
+              // Add user prompt from selected column
+              const userContent = item[this.columnMapping.prompt_column];
+              if (userContent) {
+                prompt.push({
+                  role: 'user', 
+                  content: String(userContent)
+                });
+              }
+              
+              // Create reward spec
+              const reward_spec = {
+                method: 'rule',
+                ground_truth: this.columnMapping.ground_truth_column 
+                  ? String(item[this.columnMapping.ground_truth_column] || '') 
+                  : ''
+              };
+              
+              return {
+                data_source: this.dataset.spec.defaults.data_source,
+                prompt: prompt,
+                env_class: this.dataset.spec.defaults.env_class,
+                reward_spec: reward_spec,
+                extra_info: item  // Keep original data
+              };
+            });
+            
+            // Update dataset with transformed entries
+            this.dataset.spec.splits = [{
+              name: 'train',
+              entries: entries
+            }];
+            
+            this.dataset.selectedSplit = 'train';
+            this.dataset.message = `Successfully transformed ${entries.length} entries using column mapping!`;
+            this.dataset.error = '';
+            
+            // Clear raw data as it's no longer needed
+            this.rawImportedData = null;
+            this.datasetPreview = { columns: [], sample_rows: [] };
+            
+          } catch (err) {
+            this.dataset.error = err.message;
           }
         }
       };

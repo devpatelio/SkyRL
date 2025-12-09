@@ -8,6 +8,17 @@ from jsonpath_ng import parse as jsonpath_parse
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from skyrl_gym.envs.base_text_env import BaseTextEnv, BaseTextEnvStepOutput
 from omegaconf import DictConfig
+{% if spec.tools.enabled and spec.tools.get_enabled_tools() %}
+{% for tool_type in spec.tools.get_enabled_tools() %}
+{% if tool_type == "python" %}
+from skyrl_gym.tools.python import PythonCodeExecutorToolGroup
+{% elif tool_type == "sql" %}
+from skyrl_gym.tools.sql import SQLCodeExecutorToolGroup
+{% elif tool_type == "search" %}
+from skyrl_gym.tools.search import SearchToolGroup
+{% endif %}
+{% endfor %}
+{% endif %}
 
 
 class {{ spec.env_name.capitalize() }}Env(BaseTextEnv):
@@ -19,6 +30,9 @@ class {{ spec.env_name.capitalize() }}Env(BaseTextEnv):
     Parsing method: {{ spec.parsing.method }}
     Reward creation: {{ spec.reward.creation.method }}
     Reward scheme: {{ spec.reward.scheme.scheme }}
+    {% if spec.tools.enabled and spec.tools.get_enabled_tools() %}
+    Tools enabled: {{ spec.tools.get_enabled_tools()|join(', ') }}
+    {% endif %}
     """
 
     def __init__(
@@ -48,6 +62,35 @@ class {{ spec.env_name.capitalize() }}Env(BaseTextEnv):
         {% if spec.env_type == "multi_turn" %}
         self.max_turns = extras.get("max_turns", {{ spec.max_turns }})
         self.turns = 0
+        {% endif %}
+
+        {% if spec.tools.enabled and spec.tools.get_enabled_tools() %}
+        # Initialize tools
+        tools = []
+        {% if "python" in spec.tools.get_enabled_tools() %}
+        python_tools = PythonCodeExecutorToolGroup(
+            timeout={{ spec.tools.python.timeout }},
+            # Note: allowed_imports would be implemented in actual tool group
+        )
+        tools.append(python_tools)
+        {% endif %}
+        {% if "sql" in spec.tools.get_enabled_tools() %}
+        sql_tools = SQLCodeExecutorToolGroup(
+            db_file_path="{{ spec.tools.sql.db_file_path or '' }}",
+            timeout={{ spec.tools.sql.timeout }},
+            # Note: Additional SQL config would be implemented in actual tool group
+        )
+        tools.append(sql_tools)
+        {% endif %}
+        {% if "search" in spec.tools.get_enabled_tools() %}
+        search_tools = SearchToolGroup(
+            search_url="{{ spec.tools.search.search_url }}",
+            max_results={{ spec.tools.search.max_results }},
+            timeout={{ spec.tools.search.timeout }}
+        )
+        tools.append(search_tools)
+        {% endif %}
+        self.init_tool_groups(tools)
         {% endif %}
 
     def _parse_action(self, action: str) -> Any:
@@ -180,10 +223,81 @@ class {{ spec.env_name.capitalize() }}Env(BaseTextEnv):
             "raw_score": raw_score,
         }
 
+    {% if spec.tools.enabled and spec.tools.get_enabled_tools() %}
+    def _parse_tool_call(self, action: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Parse tool calls from action. Returns (tool_group, tool_name, tool_input)."""
+        import re
+        
+        # Parse tool blocks like <tool><tool_name>input</tool_name></tool>
+        tool_block_match = re.search(r"<tool>(.*?)</tool>", action, re.DOTALL)
+        if not tool_block_match:
+            return None, None, None
+            
+        tool_content = tool_block_match.group(1).strip()
+        inner_tag_match = re.search(r"<(\w+)>(.*?)</\1>", tool_content, re.DOTALL)
+        
+        if not inner_tag_match:
+            return None, None, None
+            
+        tool_name = inner_tag_match.group(1)
+        tool_input = inner_tag_match.group(2).strip()
+        
+        # Map tool name to tool group
+        tool_mapping = {
+            {% if "python" in spec.tools.get_enabled_tools() %}
+            "python": "PythonCodeExecutorToolGroup",
+            {% endif %}
+            {% if "sql" in spec.tools.get_enabled_tools() %}
+            "sql": "SQLCodeExecutorToolGroup",
+            {% endif %}
+            {% if "search" in spec.tools.get_enabled_tools() %}
+            "search": "SearchToolGroup",
+            {% endif %}
+        }
+        
+        tool_group = tool_mapping.get(tool_name)
+        return tool_group, tool_name, tool_input
+    {% endif %}
+
     def step(self, action: str) -> BaseTextEnvStepOutput:
         """Execute one step in the environment."""
         {% if spec.env_type == "multi_turn" %}
         self.turns += 1
+        {% endif %}
+
+        {% if spec.tools.enabled and spec.tools.get_enabled_tools() %}
+        # Check if this is a tool call
+        tool_group, tool_name, tool_input = self._parse_tool_call(action)
+        if tool_group and tool_name and tool_input:
+            try:
+                tool_result = self._execute_tool(tool_group, tool_name, tool_input)
+                # Return tool result and continue the conversation
+                return BaseTextEnvStepOutput(
+                    observations=[{"role": "user", "content": f"Tool result: {tool_result}"}],
+                    reward=0.0,  # No reward for intermediate tool calls
+                    done=False,
+                    metadata={
+                        "tool_used": tool_name,
+                        "tool_result": tool_result,
+                        {% if spec.env_type == "multi_turn" %}
+                        "turns": self.turns,
+                        {% endif %}
+                    },
+                )
+            except Exception as e:
+                # Return tool error and continue
+                return BaseTextEnvStepOutput(
+                    observations=[{"role": "user", "content": f"Tool error: {str(e)}"}],
+                    reward=0.0,
+                    done=False,
+                    metadata={
+                        "tool_used": tool_name,
+                        "tool_error": str(e),
+                        {% if spec.env_type == "multi_turn" %}
+                        "turns": self.turns,
+                        {% endif %}
+                    },
+                )
         {% endif %}
 
         answer = self._parse_action(action)
